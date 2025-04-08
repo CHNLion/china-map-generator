@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>中国地图生成器</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container mt-5">
+        <div class="row">
+            <div class="col-md-10 offset-md-1">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h2 class="text-center">中国地图生成器</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info">
+                            <h5>使用说明</h5>
+                            <ul>
+                                <li>行政分界选择：选择地图显示的行政边界级别（全国、省、市或县级边界）</li>
+                                <li>底图区域：选择要显示的具体区域，系统将根据您最后选择的级别确定显示范围</li>
+                                <li>突出显示：可选择在地图上突出显示特定区域</li>
+                                <li>自定义颜色：可调整底图颜色、突出颜色和边界线颜色、宽度等参数</li>
+                                <li>显示地区名称：控制是否在地图上显示地区名称标签</li>
+                                <li>显示经纬度坐标：控制是否在地图上显示经纬度网格和坐标，可调整字体大小</li>
+                                <li>显示图片名称：控制是否在地图顶部显示标题，标题内容默认为所选区域名称</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="row mb-4">
+                            <div class="col-md-12">
+                                <h4>选择行政分界</h4>
+                                <div class="form-group">
+                                    <div class="btn-group" role="group" aria-label="地图类型选择">
+                                        <input type="radio" class="btn-check" name="mapTypeRadio" id="mapTypeNational" value="national" checked>
+                                        <label class="btn btn-outline-primary" for="mapTypeNational">全国</label>
+                                        
+                                        <input type="radio" class="btn-check" name="mapTypeRadio" id="mapTypeProvince" value="省">
+                                        <label class="btn btn-outline-primary" for="mapTypeProvince">省</label>
+                                        
+                                        <input type="radio" class="btn-check" name="mapTypeRadio" id="mapTypeCity" value="市">
+                                        <label class="btn btn-outline-primary" for="mapTypeCity">市</label>
+                                        
+                                        <input type="radio" class="btn-check" name="mapTypeRadio" id="mapTypeCounty" value="县">
+                                        <label class="btn btn-outline-primary" for="mapTypeCounty">县</label>
+                                    </div>
+                                    <input type="hidden" id="mapType" value="省">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 底图区域选择 -->
+                        <div class="row mb-4">
+                            <div class="col-md-12">
+                                <h4 class="mb-3">底图区域</h4>
+                            </div>
+                            <!-- 省级选择 -->
+                            <div class="col-md-4" id="provinceSelectContainer">
+                                <h5>选择省份</h5>
+                                <select id="provinceSelect" class="form-select">
+                                    <option value="">请选择省份</option>
+                                    <!-- 省份选项将通过JavaScript动态加载 -->
+                                </select>
+                            </div>
+                            <!-- 市级选择 -->
+                            <div class="col-md-4" id="citySelectContainer" style="display: none;">
+                                <h5>选择城市</h5>
+                                <select id="citySelect" class="form-select">
+                                    <option value="">请先选择省份</option>
+                                    <!-- 城市选项将通过JavaScript动态加载 -->
+                                </select>
+                            </div>
+                            <!-- 县级选择 -->
+                            <div class="col-md-4" id="countySelectContainer" style="display: none;">
+                                <h5>选择县区</h5>
+                                <select id="countySelect" class="form-select">
+                                    <option value="">请先选择城市</option>
+                                    <!-- 县区选项将通过JavaScript动态加载 -->
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <!-- 突出区域设置 -->
+                        <div class="row mb-4">
+                            <div class="col-md-12">
+                                <div class="card">
+                                    <div class="card-header bg-light">
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" id="enableHighlight">
+                                            <label class="form-check-label" for="enableHighlight">启用突出显示</label>
+                                        </div>
+                                    </div>
+                                    <div class="card-body" id="highlightOptions" style="display: none;">
+                                        <div class="row">
+                                            <div class="col-md-12">
+                                                <h4 class="mb-3">突出显示区域</h4>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <h5>选择省份</h5>
+                                                <select id="highlightProvinceSelect" class="form-select">
+                                                    <option value="">请选择省份</option>
+                                                    <!-- 省份选项将通过JavaScript动态加载 -->
+                                                </select>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <h5>选择城市</h5>
+                                                <select id="highlightCitySelect" class="form-select" disabled>
+                                                    <option value="">请先选择省份</option>
+                                                    <!-- 城市选项将通过JavaScript动态加载 -->
+                                                </select>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <h5>选择县区</h5>
+                                                <select id="highlightCountySelect" class="form-select" disabled>
+                                                    <option value="">请先选择城市</option>
+                                                    <!-- 县区选项将通过JavaScript动态加载 -->
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 颜色设置 -->
+                        <div class="row mb-4">
+                            <div class="col-md-12">
+                                <div class="card">
+                                    <div class="card-header bg-light">
+                                        <h5 class="mb-0">自定义颜色</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-4">
+                                                <div class="mb-3">
+                                                    <label for="baseColor" class="form-label">底图颜色</label>
+                                                    <input type="color" class="form-control form-control-color" id="baseColor" value="#EAEAEA" title="选择底图颜色">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="mb-3">
+                                                    <label for="highlightColor" class="form-label">突出显示颜色</label>
+                                                    <input type="color" class="form-control form-control-color" id="highlightColor" value="#7ED2F7" title="选择突出显示颜色">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="mb-3">
+                                                    <label for="borderColor" class="form-label">边界线颜色</label>
+                                                    <input type="color" class="form-control form-control-color" id="borderColor" value="#FFFFFF" title="选择边界线颜色">
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label for="borderWidth" class="form-label">边界线宽度</label>
+                                                    <div class="d-flex align-items-center">
+                                                        <input type="range" class="form-range me-2" min="0.1" max="3.0" step="0.1" id="borderWidth" value="1.5" list="borderWidthTicks">
+                                                        <datalist id="borderWidthTicks">
+                                                            <option value="0.1"></option>
+                                                            <option value="0.5"></option>
+                                                            <option value="1.0"></option>
+                                                            <option value="1.5"></option>
+                                                            <option value="2.0"></option>
+                                                            <option value="2.5"></option>
+                                                            <option value="3.0"></option>
+                                                        </datalist>
+                                                        <input type="number" class="form-control" id="borderWidthInput" value="1.5" min="0.1" max="3.0" step="0.1" style="width: 80px;">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 显示标签选项 -->
+                        <div class="row mb-4">
+                            <div class="col-md-12">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="showLabels">
+                                    <label class="form-check-label" for="showLabels">
+                                        显示地区名称
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 显示经纬度选项 -->
+                        <div class="row mb-4">
+                            <div class="col-md-12">
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="showCoordinates">
+                                    <label class="form-check-label" for="showCoordinates">
+                                        显示经纬度坐标
+                                    </label>
+                                </div>
+                                <div class="row mt-2" id="coordinatesFontSizeContainer" style="display: none;">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="coordinatesFontSize" class="form-label">字体大小</label>
+                                            <div class="d-flex align-items-center">
+                                                <input type="range" class="form-range me-2" min="10" max="30" step="1" id="coordinatesFontSize" value="20" list="coordinatesFontSizeTicks">
+                                                <datalist id="coordinatesFontSizeTicks">
+                                                    <option value="10"></option>
+                                                    <option value="15"></option>
+                                                    <option value="20"></option>
+                                                    <option value="25"></option>
+                                                    <option value="30"></option>
+                                                </datalist>
+                                                <input type="number" class="form-control" id="coordinatesFontSizeInput" value="20" min="10" max="30" step="1" style="width: 80px;">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 显示图片名称选项 -->
+                        <div class="row mb-4">
+                            <div class="col-md-12">
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="enableCustomTitle">
+                                    <label class="form-check-label" for="enableCustomTitle">
+                                        显示图片名称
+                                    </label>
+                                </div>
+                                <div id="titleOptions" class="mt-2" style="display: none;">
+                                    <div class="row">
+                                        <div class="col-md-8">
+                                            <div class="form-group mb-2">
+                                                <label for="customTitle" class="form-label">标题内容</label>
+                                                <input type="text" class="form-control" id="customTitle" placeholder="输入地图标题">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="form-group mb-2">
+                                                <label for="titleFontSize" class="form-label">字体大小</label>
+                                                <select class="form-select" id="titleFontSize">
+                                                    <option value="12">12 像素</option>
+                                                    <option value="14">14 像素</option>
+                                                    <option value="15" selected>15 像素</option>
+                                                    <option value="16">16 像素</option>
+                                                    <option value="18">18 像素</option>
+                                                    <option value="20">20 像素</option>
+                                                    <option value="24">24 像素</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="text-center mb-4">
+                            <button id="generateBtn" class="btn btn-primary btn-lg">生成地图</button>
+                        </div>
+                        
+                        <div id="loadingIndicator" class="text-center d-none">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">加载中...</span>
+                            </div>
+                            <p>正在生成地图，请稍候...</p>
+                        </div>
+                        
+                        <div id="mapResult" class="d-none">
+                            <h4 class="text-center mb-3">生成的地图</h4>
+                            <div class="text-center">
+                                <img id="mapImage" class="img-fluid border" alt="生成的地图">
+                            </div>
+                            <div class="mt-3 text-center">
+                                <a id="downloadLink" class="btn btn-success" download>下载地图图片</a>
+                            </div>
+                        </div>
+                        
+                        <div id="errorMessage" class="alert alert-danger mt-3 d-none">
+                            <strong>错误：</strong> <span id="errorText"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <footer class="mt-5 text-center text-muted">
+        <p>中国地图生成器 by CHNLion © 2025</p>
+    </footer>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html> 
