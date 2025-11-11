@@ -361,43 +361,48 @@ def generate_map(map_type='省', region_name=None, highlight_region=None,
     plt.rcParams['savefig.dpi'] = 300
     
     # 使用Figure和Axes对象，避免使用pyplot的状态机接口
-    # 调整图形尺寸比例以更好地适配中国地图 (调整为更宽的比例)
-    fig = matplotlib.figure.Figure(figsize=(14, 10))
+    # 调整图形尺寸比例为16:9
+    fig = matplotlib.figure.Figure(figsize=(16, 9))
     
     # 使用标准的子图，而不使用投影（避免与GeoPandas兼容性问题）
     ax = fig.add_subplot(111)
     
     # 投影转换 - 将地理坐标转换为适合中国地图的投影系统
     try:
-        # 检查并转换当前坐标系统
-        if gdf.crs and ('longlat' in str(gdf.crs).lower() or 'wgs84' in str(gdf.crs).lower()):
-            print(f"检测到地理坐标系统: {gdf.crs}，转换为适合中国地图的投影系统")
-            original_crs = gdf.crs  # 保存原始坐标系以便后续使用
-            
-            # 使用ESRI:102012 Asia_Lambert_Conformal_Conic投影
-            # 这是专为亚洲地区设计的等角圆锥投影，特别适合中国地图
-            asia_lcc_crs = CRS.from_epsg(102012)
-            # 如果上面的代码报错（某些系统可能无法直接使用EPSG:102012），使用完整的PROJ字符串
-            if not asia_lcc_crs:
-                asia_lcc_crs = CRS.from_proj4(
-                    "+proj=lcc +lat_1=30 +lat_2=62 +lat_0=0 +lon_0=105 +x_0=0 +y_0=0 "
-                    "+ellps=WGS84 +datum=WGS84 +units=m +no_defs"
-                )
-            gdf = gdf.to_crs(asia_lcc_crs)
-            print(f"坐标系统已转换为ESRI:102012 Asia_Lambert_Conformal_Conic")
-        else:
-            print(f"保持原始坐标系统: {gdf.crs}")
-            original_crs = gdf.crs
+        print(f"原始坐标系统: {gdf.crs}")
+        original_crs = gdf.crs  # 保存原始坐标系以便后续使用
+        
+        # 定义Lambert正形圆锥投影（中国测绘标准）
+        # 两个标准纬线覆盖中国南北跨度（海南到黑龙江）
+        asia_lcc_crs = CRS.from_proj4(
+            "+proj=lcc "
+            "+lat_1=25 +lat_2=47 "  # 两个标准纬线（纬度跨度覆盖南北中国）
+            "+lon_0=105 "            # 中心经度设在中国中部
+            "+lat_0=0 "
+            "+x_0=0 +y_0=0 "
+            "+datum=WGS84 "
+            "+units=m +no_defs"
+        )
+        
+        # 强制转换为Lambert正形圆锥投影（确保使用平面投影）
+        gdf = gdf.to_crs(asia_lcc_crs)
+        print(f"✓ 坐标系统已转换为Lambert正形圆锥投影（中国测绘标准：lat_1=25°, lat_2=47°）")
+        print(f"✓ 投影参数：中心经度105°，标准纬线25°和47°")
     except Exception as e:
         print(f"尝试转换坐标系统时出错: {str(e)}")
-        # 如果直接使用ESRI:102012失败，尝试使用PROJ字符串定义
+        # 使用PROJ字符串定义Lambert正形圆锥投影
         try:
             asia_lcc_crs = CRS.from_proj4(
-                "+proj=lcc +lat_1=30 +lat_2=62 +lat_0=0 +lon_0=105 +x_0=0 +y_0=0 "
-                "+ellps=WGS84 +datum=WGS84 +units=m +no_defs"
+                "+proj=lcc "
+                "+lat_1=25 +lat_2=47 "  # 两个标准纬线（纬度跨度覆盖南北中国）
+                "+lon_0=105 "            # 中心经度设在中国中部
+                "+lat_0=0 "
+                "+x_0=0 +y_0=0 "
+                "+datum=WGS84 "
+                "+units=m +no_defs"
             )
             gdf = gdf.to_crs(asia_lcc_crs)
-            print(f"坐标系统已转换为Asia Lambert Conformal Conic(使用PROJ字符串)")
+            print(f"坐标系统已转换为Lambert正形圆锥投影（中国测绘标准：lat_1=25, lat_2=47）")
         except Exception as e2:
             print(f"使用PROJ字符串转换坐标系时出错: {str(e2)}")
             original_crs = gdf.crs
