@@ -46,6 +46,13 @@ document.addEventListener('DOMContentLoaded', function() {
     const customTitle = document.getElementById('customTitle');
     const titleFontSize = document.getElementById('titleFontSize');
     
+    // 获取DOM元素 - 比例尺
+    const showScaleBar = document.getElementById('showScaleBar');
+    const scaleBarOptions = document.getElementById('scaleBarOptions');
+    const scaleBarStyle = document.getElementById('scaleBarStyle');
+    const scaleBarLocation = document.getElementById('scaleBarLocation');
+    const scaleBarFontSize = document.getElementById('scaleBarFontSize');
+    
     // 设置默认值
     highlightColor.value = '#7ED2F7'; // 设置高亮颜色默认值为 rgb(126,210,247)
     borderWidth.value = 1.5; // 设置边界线宽度默认值为1.5
@@ -76,6 +83,15 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         } else {
             titleOptions.style.display = 'none';
+        }
+    });
+    
+    // 添加比例尺切换事件
+    showScaleBar.addEventListener('change', function() {
+        if (this.checked) {
+            scaleBarOptions.style.display = 'block';
+        } else {
+            scaleBarOptions.style.display = 'none';
         }
     });
     
@@ -832,6 +848,10 @@ document.addEventListener('DOMContentLoaded', function() {
             showTitle: titleSettings.showTitle,
             customTitle: titleSettings.customTitle,
             titleFontSize: titleSettings.titleFontSize,
+            showScaleBar: showScaleBar.checked,
+            scaleBarStyle: scaleBarStyle.value,
+            scaleBarLocation: scaleBarLocation.value,
+            scaleBarFontSize: parseInt(scaleBarFontSize.value),
             saveLocal: false  // 不保存到本地，使用Base64传输
         };
         

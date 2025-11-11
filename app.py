@@ -43,6 +43,12 @@ def create_map():
     show_coordinates = data.get('showCoordinates', False)  # 是否显示经纬度
     coordinates_font_size = int(data.get('coordinatesFontSize', 8))  # 经纬度字体大小
     
+    # 新增比例尺显示参数
+    show_scale_bar = data.get('showScaleBar', False)  # 是否显示比例尺
+    scale_bar_style = data.get('scaleBarStyle', 'default')  # 比例尺样式
+    scale_bar_location = data.get('scaleBarLocation', 'lower right')  # 比例尺位置
+    scale_bar_font_size = int(data.get('scaleBarFontSize', 12))  # 比例尺字体大小
+    
     # 新增本地保存控制参数
     save_local = data.get('saveLocal', False)  # 是否保存到本地文件系统
     
@@ -51,6 +57,8 @@ def create_map():
         print(f"自定义标题: '{custom_title}', 字体大小: {title_font_size}")
     if show_coordinates:
         print(f"显示经纬度, 字体大小: {coordinates_font_size}")
+    if show_scale_bar:
+        print(f"显示比例尺, 样式: {scale_bar_style}, 位置: {scale_bar_location}, 字体大小: {scale_bar_font_size}")
     print(f"保存方式: {'本地保存' if save_local else 'Base64编码'}")
     
     try:
@@ -68,6 +76,10 @@ def create_map():
             titleFontSize=title_font_size,
             showCoordinates=show_coordinates,
             coordinatesFontSize=coordinates_font_size,
+            showScaleBar=show_scale_bar,
+            scaleBarStyle=scale_bar_style,
+            scaleBarLocation=scale_bar_location,
+            scaleBarFontSize=scale_bar_font_size,
             save_local=save_local
         )
         

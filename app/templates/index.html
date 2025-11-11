@@ -32,8 +32,15 @@
                                 </li>
                                 <li><strong>高级颜色选择：</strong>使用Pickr颜色选择器，支持RGB、HSL、HEX模式和预设颜色板</li>
                                 <li><strong>显示地区名称：</strong>控制是否在地图上显示地区名称标签</li>
-                                <li><strong>显示经纬度坐标：</strong>控制是否在地图上显示经纬度网格和坐标，可调整字体大小（10-30）</li>
                                 <li><strong>显示图片名称：</strong>控制是否在地图顶部显示标题，可自定义标题内容和字体大小</li>
+                                <li><strong>显示经纬度坐标：</strong>控制是否在地图上显示经纬度网格和坐标，可调整字体大小（10-30）</li>
+                                <li><strong>显示比例尺：</strong>
+                                    <ul class="mt-1 mb-1">
+                                        <li>三种专业样式：分段式（黑白交替）、刻度线式、双行交替式</li>
+                                        <li>比例尺自动根据地图大小计算，确保比例准确</li>
+                                        <li>可自定义位置（四个角落）和字体大小</li>
+                                    </ul>
+                                </li>
                                 <li><strong>地图投影：</strong>使用Lambert正形圆锥投影（中国测绘标准），确保地图比例准确</li>
                             </ul>
                         </div>
@@ -182,6 +189,42 @@
                             </div>
                         </div>
                         
+                        <!-- 显示图片名称选项 -->
+                        <div class="row mb-4">
+                            <div class="col-md-12">
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="enableCustomTitle">
+                                    <label class="form-check-label" for="enableCustomTitle">
+                                        显示图片名称
+                                    </label>
+                                </div>
+                                <div id="titleOptions" class="mt-2" style="display: none;">
+                                    <div class="row">
+                                        <div class="col-md-8">
+                                            <div class="form-group mb-2">
+                                                <label for="customTitle" class="form-label">标题内容</label>
+                                                <input type="text" class="form-control" id="customTitle" placeholder="输入地图标题">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="form-group mb-2">
+                                                <label for="titleFontSize" class="form-label">字体大小</label>
+                                                <select class="form-select" id="titleFontSize">
+                                                    <option value="12">12 像素</option>
+                                                    <option value="14">14 像素</option>
+                                                    <option value="15" selected>15 像素</option>
+                                                    <option value="16">16 像素</option>
+                                                    <option value="18">18 像素</option>
+                                                    <option value="20">20 像素</option>
+                                                    <option value="24">24 像素</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
                         <!-- 显示经纬度选项 -->
                         <div class="row mb-4">
                             <div class="col-md-12">
@@ -212,34 +255,47 @@
                             </div>
                         </div>
                         
-                        <!-- 显示图片名称选项 -->
+                        <!-- 显示比例尺选项 -->
                         <div class="row mb-4">
                             <div class="col-md-12">
                                 <div class="form-check mb-2">
-                                    <input class="form-check-input" type="checkbox" id="enableCustomTitle">
-                                    <label class="form-check-label" for="enableCustomTitle">
-                                        显示图片名称
+                                    <input class="form-check-input" type="checkbox" id="showScaleBar">
+                                    <label class="form-check-label" for="showScaleBar">
+                                        显示比例尺
                                     </label>
                                 </div>
-                                <div id="titleOptions" class="mt-2" style="display: none;">
+                                <div id="scaleBarOptions" class="mt-2" style="display: none;">
                                     <div class="row">
-                                        <div class="col-md-8">
+                                        <div class="col-md-4">
                                             <div class="form-group mb-2">
-                                                <label for="customTitle" class="form-label">标题内容</label>
-                                                <input type="text" class="form-control" id="customTitle" placeholder="输入地图标题">
+                                                <label for="scaleBarStyle" class="form-label">比例尺样式</label>
+                                                <select class="form-select" id="scaleBarStyle">
+                                                    <option value="segmented" selected>分段式（黑白交替）</option>
+                                                    <option value="tick_only">刻度线式</option>
+                                                    <option value="double_row">双行交替式</option>
+                                                </select>
                                             </div>
                                         </div>
                                         <div class="col-md-4">
                                             <div class="form-group mb-2">
-                                                <label for="titleFontSize" class="form-label">字体大小</label>
-                                                <select class="form-select" id="titleFontSize">
-                                                    <option value="12">12 像素</option>
+                                                <label for="scaleBarLocation" class="form-label">比例尺位置</label>
+                                                <select class="form-select" id="scaleBarLocation">
+                                                    <option value="lower right" selected>右下角</option>
+                                                    <option value="lower left">左下角</option>
+                                                    <option value="upper right">右上角</option>
+                                                    <option value="upper left">左上角</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="form-group mb-2">
+                                                <label for="scaleBarFontSize" class="form-label">字体大小</label>
+                                                <select class="form-select" id="scaleBarFontSize">
+                                                    <option value="8">8 像素</option>
+                                                    <option value="10">10 像素</option>
+                                                    <option value="12" selected>12 像素</option>
                                                     <option value="14">14 像素</option>
-                                                    <option value="15" selected>15 像素</option>
                                                     <option value="16">16 像素</option>
-                                                    <option value="18">18 像素</option>
-                                                    <option value="20">20 像素</option>
-                                                    <option value="24">24 像素</option>
                                                 </select>
                                             </div>
                                         </div>

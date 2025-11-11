@@ -299,7 +299,9 @@ def generate_map(map_type='省', region_name=None, highlight_regions=None,
                  base_color="#EAEAEA", 
                  border_color="white", border_width=0.5,
                  show_labels=True, showTitle=True, customTitle='', titleFontSize=15,
-                 showCoordinates=False, coordinatesFontSize=20, save_local=False):
+                 showCoordinates=False, coordinatesFontSize=20,
+                 showScaleBar=False, scaleBarStyle='default', scaleBarLocation='lower right', scaleBarFontSize=12,
+                 save_local=False):
     """
     生成地图图片，可以高亮显示多个区域（每个区域可以有独立颜色）
     
@@ -316,6 +318,10 @@ def generate_map(map_type='省', region_name=None, highlight_regions=None,
         titleFontSize (int): 标题字体大小
         showCoordinates (bool): 是否显示经纬度坐标
         coordinatesFontSize (int): 经纬度字体大小
+        showScaleBar (bool): 是否显示比例尺
+        scaleBarStyle (str): 比例尺样式，可选 'segmented'(分段式), 'tick_only'(刻度线式), 'double_row'(双行交替式)
+        scaleBarLocation (str): 比例尺位置，可选 'lower right', 'lower left', 'upper right', 'upper left'
+        scaleBarFontSize (int): 比例尺字体大小
         save_local (bool): 是否保存到本地文件系统
         
     返回:
@@ -850,6 +856,393 @@ def generate_map(map_type='省', region_name=None, highlight_regions=None,
         print(f"设置地图标题: '{map_title}', 字体大小: {titleFontSize}")
     else:
         print("不显示地图标题")
+    
+    # 添加自定义绘制的比例尺函数
+    def draw_custom_scalebar(ax, style, location, font_size):
+        """绘制自定义的黑白交替分段式比例尺"""
+        from matplotlib.patches import Rectangle
+        from matplotlib.lines import Line2D
+        
+        # 获取坐标轴范围
+        xlim = ax.get_xlim()
+        ylim = ax.get_ylim()
+        
+        # 计算地图的实际宽度（米）
+        map_width_m = xlim[1] - xlim[0]
+        map_height_m = ylim[1] - ylim[0]
+        
+        # 自动选择合适的比例尺长度（千米）- 选择地图宽度的30-40%
+        total_km = map_width_m / 1000
+        target_scale_km = total_km * 0.35  # 比例尺占地图宽度的35%
+        
+        # 选择最接近的"整数"公里数
+        if target_scale_km >= 1500:
+            scale_km = 2000
+        elif target_scale_km >= 1000:
+            scale_km = 1500
+        elif target_scale_km >= 750:
+            scale_km = 1000
+        elif target_scale_km >= 400:
+            scale_km = 500
+        elif target_scale_km >= 250:
+            scale_km = 300
+        elif target_scale_km >= 150:
+            scale_km = 200
+        elif target_scale_km >= 75:
+            scale_km = 100
+        elif target_scale_km >= 40:
+            scale_km = 50
+        elif target_scale_km >= 15:
+            scale_km = 20
+        elif target_scale_km >= 7:
+            scale_km = 10
+        else:
+            scale_km = 5
+        
+        # 计算比例尺的像素长度（与实际地理距离匹配）
+        scale_m = scale_km * 1000
+        scale_pixel_length = scale_m  # 精确匹配实际距离
+        
+        # 根据位置确定比例尺的起始坐标
+        margin_x = map_width_m * 0.03  # 减小边距
+        margin_y = map_height_m * 0.05
+        
+        if 'right' in location:
+            start_x = xlim[1] - margin_x - scale_pixel_length
+        else:  # left
+            start_x = xlim[0] + margin_x
+        
+        if 'lower' in location:
+            start_y = ylim[0] + margin_y
+        else:  # upper
+            start_y = ylim[1] - margin_y - map_height_m * 0.03
+        
+        # 比例尺的高度
+        bar_height = map_height_m * 0.018  # 增加高度
+        
+        # 分段数量
+        num_segments = 5
+        segment_length = scale_pixel_length / num_segments
+        
+        # 绘制黑白交替的矩形
+        for i in range(num_segments):
+            color = 'black' if i % 2 == 0 else 'white'
+            rect = Rectangle(
+                (start_x + i * segment_length, start_y),
+                segment_length,
+                bar_height,
+                facecolor=color,
+                edgecolor='black',
+                linewidth=0.8,
+                zorder=1000
+            )
+            ax.add_patch(rect)
+        
+        # 添加刻度标记和数字
+        for i in range(num_segments + 1):
+            tick_x = start_x + i * segment_length
+            # 绘制刻度线
+            line = Line2D(
+                [tick_x, tick_x],
+                [start_y, start_y - bar_height * 0.3],
+                color='black',
+                linewidth=0.8,
+                zorder=1000
+            )
+            ax.add_line(line)
+            
+            # 添加数字标签（所有刻度都显示）
+            label_text = f"{int(scale_km * i / num_segments)}"
+            ax.text(
+                tick_x,
+                start_y - bar_height * 0.8,
+                label_text,
+                ha='center',
+                va='top',
+                fontsize=font_size,
+                fontweight='normal',
+                zorder=1001
+            )
+        
+        # 添加单位标签
+        ax.text(
+            start_x + scale_pixel_length / 2,
+            start_y + bar_height * 1.5,
+            'km',
+            ha='center',
+            va='bottom',
+            fontsize=font_size,
+            fontweight='normal',
+            zorder=1001
+        )
+        
+        print(f"[OK] 已绘制自定义比例尺: {scale_km} km, {num_segments}段")
+    
+    def draw_tick_only_scalebar(ax, location, font_size):
+        """绘制刻度线式比例尺（只有刻度和数字，无填充）"""
+        from matplotlib.lines import Line2D
+        
+        # 获取坐标轴范围
+        xlim = ax.get_xlim()
+        ylim = ax.get_ylim()
+        
+        # 计算地图的实际宽度（米）
+        map_width_m = xlim[1] - xlim[0]
+        map_height_m = ylim[1] - ylim[0]
+        
+        # 自动选择合适的比例尺长度（千米）- 选择地图宽度的30-40%
+        total_km = map_width_m / 1000
+        target_scale_km = total_km * 0.35  # 比例尺占地图宽度的35%
+        
+        # 选择最接近的"整数"公里数
+        if target_scale_km >= 1500:
+            scale_km = 2000
+        elif target_scale_km >= 1000:
+            scale_km = 1500
+        elif target_scale_km >= 750:
+            scale_km = 1000
+        elif target_scale_km >= 400:
+            scale_km = 500
+        elif target_scale_km >= 250:
+            scale_km = 300
+        elif target_scale_km >= 150:
+            scale_km = 200
+        elif target_scale_km >= 75:
+            scale_km = 100
+        elif target_scale_km >= 40:
+            scale_km = 50
+        elif target_scale_km >= 15:
+            scale_km = 20
+        elif target_scale_km >= 7:
+            scale_km = 10
+        else:
+            scale_km = 5
+        
+        # 计算比例尺的像素长度（与实际地理距离匹配）
+        scale_m = scale_km * 1000
+        scale_pixel_length = scale_m  # 精确匹配实际距离
+        
+        # 根据位置确定比例尺的起始坐标
+        margin_x = map_width_m * 0.03  # 减小边距
+        margin_y = map_height_m * 0.05
+        
+        if 'right' in location:
+            start_x = xlim[1] - margin_x - scale_pixel_length
+        else:
+            start_x = xlim[0] + margin_x
+        
+        if 'lower' in location:
+            start_y = ylim[0] + margin_y
+        else:
+            start_y = ylim[1] - margin_y - map_height_m * 0.02
+        
+        # 绘制主线
+        main_line = Line2D(
+            [start_x, start_x + scale_pixel_length],
+            [start_y, start_y],
+            color='black',
+            linewidth=1.2,
+            zorder=1000
+        )
+        ax.add_line(main_line)
+        
+        # 分段数量
+        num_segments = 4
+        segment_length = scale_pixel_length / num_segments
+        tick_height = map_height_m * 0.008
+        
+        # 绘制刻度线和数字
+        for i in range(num_segments + 1):
+            tick_x = start_x + i * segment_length
+            # 绘制刻度线
+            line = Line2D(
+                [tick_x, tick_x],
+                [start_y - tick_height, start_y + tick_height],
+                color='black',
+                linewidth=1.0,
+                zorder=1000
+            )
+            ax.add_line(line)
+            
+            # 添加数字标签
+            label_text = f"{int(scale_km * i / num_segments)}"
+            ax.text(
+                tick_x,
+                start_y - tick_height * 2.5,
+                label_text,
+                ha='center',
+                va='top',
+                fontsize=font_size,
+                fontweight='normal',
+                zorder=1001
+            )
+        
+        # 添加单位标签
+        ax.text(
+            start_x + scale_pixel_length + margin_x * 0.2,
+            start_y,
+            'km',
+            ha='left',
+            va='center',
+            fontsize=font_size,
+            fontweight='normal',
+            zorder=1001
+        )
+        
+        print(f"[OK] 已绘制刻度线式比例尺: {scale_km} km")
+    
+    def draw_double_row_scalebar(ax, location, font_size):
+        """绘制双行交替式比例尺（上下两行黑白交替错位）"""
+        from matplotlib.patches import Rectangle
+        from matplotlib.lines import Line2D
+        
+        # 获取坐标轴范围
+        xlim = ax.get_xlim()
+        ylim = ax.get_ylim()
+        
+        # 计算地图的实际宽度（米）
+        map_width_m = xlim[1] - xlim[0]
+        map_height_m = ylim[1] - ylim[0]
+        
+        # 自动选择合适的比例尺长度（千米）- 选择地图宽度的30-40%
+        total_km = map_width_m / 1000
+        target_scale_km = total_km * 0.35  # 比例尺占地图宽度的35%
+        
+        # 选择最接近的"整数"公里数
+        if target_scale_km >= 1500:
+            scale_km = 2000
+        elif target_scale_km >= 1000:
+            scale_km = 1500
+        elif target_scale_km >= 750:
+            scale_km = 1000
+        elif target_scale_km >= 400:
+            scale_km = 500
+        elif target_scale_km >= 250:
+            scale_km = 300
+        elif target_scale_km >= 150:
+            scale_km = 200
+        elif target_scale_km >= 75:
+            scale_km = 100
+        elif target_scale_km >= 40:
+            scale_km = 50
+        elif target_scale_km >= 15:
+            scale_km = 20
+        elif target_scale_km >= 7:
+            scale_km = 10
+        else:
+            scale_km = 5
+        
+        # 计算比例尺的像素长度（与实际地理距离匹配）
+        scale_m = scale_km * 1000
+        scale_pixel_length = scale_m  # 精确匹配实际距离
+        
+        # 根据位置确定比例尺的起始坐标
+        margin_x = map_width_m * 0.03  # 减小边距
+        margin_y = map_height_m * 0.05
+        
+        if 'right' in location:
+            start_x = xlim[1] - margin_x - scale_pixel_length
+        else:
+            start_x = xlim[0] + margin_x
+        
+        if 'lower' in location:
+            start_y = ylim[0] + margin_y
+        else:
+            start_y = ylim[1] - margin_y - map_height_m * 0.05
+        
+        # 每行的高度
+        row_height = map_height_m * 0.012  # 增加高度
+        
+        # 分段数量
+        num_segments = 10
+        segment_length = scale_pixel_length / num_segments
+        
+        # 绘制上行（第一行）
+        for i in range(num_segments):
+            if i % 2 == 0:
+                color = 'black'
+            else:
+                color = 'white'
+            rect = Rectangle(
+                (start_x + i * segment_length, start_y + row_height),
+                segment_length,
+                row_height,
+                facecolor=color,
+                edgecolor='black',
+                linewidth=0.5,
+                zorder=1000
+            )
+            ax.add_patch(rect)
+        
+        # 绘制下行（第二行，颜色相反）
+        for i in range(num_segments):
+            if i % 2 == 0:
+                color = 'white'
+            else:
+                color = 'black'
+            rect = Rectangle(
+                (start_x + i * segment_length, start_y),
+                segment_length,
+                row_height,
+                facecolor=color,
+                edgecolor='black',
+                linewidth=0.5,
+                zorder=1000
+            )
+            ax.add_patch(rect)
+        
+        # 添加刻度标记和数字（每隔2段标注）
+        for i in range(0, num_segments + 1, 2):
+            tick_x = start_x + i * segment_length
+            # 绘制刻度线
+            line = Line2D(
+                [tick_x, tick_x],
+                [start_y - row_height * 0.3, start_y],
+                color='black',
+                linewidth=0.8,
+                zorder=1000
+            )
+            ax.add_line(line)
+            
+            # 添加数字标签
+            label_text = f"{int(scale_km * i / num_segments)}"
+            ax.text(
+                tick_x,
+                start_y - row_height * 1.2,
+                label_text,
+                ha='center',
+                va='top',
+                fontsize=font_size,
+                fontweight='normal',
+                zorder=1001
+            )
+        
+        # 添加单位标签
+        ax.text(
+            start_x + scale_pixel_length / 2,
+            start_y + row_height * 2.8,
+            'km',
+            ha='center',
+            va='bottom',
+            fontsize=font_size,
+            fontweight='normal',
+            zorder=1001
+        )
+        
+        print(f"[OK] 已绘制双行交替式比例尺: {scale_km} km")
+    
+    # 添加比例尺
+    if showScaleBar:
+        # 使用自定义绘制的专业比例尺样式
+        try:
+            if scaleBarStyle == 'tick_only':
+                draw_tick_only_scalebar(ax, scaleBarLocation, scaleBarFontSize)
+            elif scaleBarStyle == 'double_row':
+                draw_double_row_scalebar(ax, scaleBarLocation, scaleBarFontSize)
+            else:  # 默认使用分段式
+                draw_custom_scalebar(ax, scaleBarStyle, scaleBarLocation, scaleBarFontSize)
+        except Exception as e:
+            print(f"绘制比例尺时出错: {str(e)}")
     
     # 生成唯一文件名
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
