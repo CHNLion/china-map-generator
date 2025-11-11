@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>中国地图生成器</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css">
+    <!-- Pickr 颜色选择器 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@simonwep/pickr/dist/themes/nano.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
@@ -19,13 +21,20 @@
                         <div class="alert alert-info">
                             <h5>使用说明</h5>
                             <ul>
-                                <li>行政分界选择：选择地图显示的行政边界级别（全国、省、市或县级边界）</li>
-                                <li>底图区域：选择要显示的具体区域，系统将根据您最后选择的级别确定显示范围</li>
-                                <li>突出显示：可选择在地图上突出显示特定区域</li>
-                                <li>自定义颜色：可调整底图颜色、突出颜色和边界线颜色、宽度等参数</li>
-                                <li>显示地区名称：控制是否在地图上显示地区名称标签</li>
-                                <li>显示经纬度坐标：控制是否在地图上显示经纬度网格和坐标，可调整字体大小</li>
-                                <li>显示图片名称：控制是否在地图顶部显示标题，标题内容默认为所选区域名称</li>
+                                <li><strong>行政分界选择：</strong>选择地图显示的行政边界级别（全国、省、市或县级边界）</li>
+                                <li><strong>底图区域：</strong>选择要显示的具体区域，系统将根据您最后选择的级别确定显示范围</li>
+                                <li><strong>多区域突出显示：</strong>
+                                    <ul class="mt-1 mb-1">
+                                        <li>可同时突出显示多个区域，每个区域可设置不同颜色</li>
+                                        <li>突出显示区域会自动跟随底图区域（智能锁定）</li>
+                                        <li>点击"+ 添加区域"可添加更多突出区域，点击"删除"移除不需要的区域</li>
+                                    </ul>
+                                </li>
+                                <li><strong>高级颜色选择：</strong>使用Pickr颜色选择器，支持RGB、HSL、HEX模式和预设颜色板</li>
+                                <li><strong>显示地区名称：</strong>控制是否在地图上显示地区名称标签</li>
+                                <li><strong>显示经纬度坐标：</strong>控制是否在地图上显示经纬度网格和坐标，可调整字体大小（10-30）</li>
+                                <li><strong>显示图片名称：</strong>控制是否在地图顶部显示标题，可自定义标题内容和字体大小</li>
+                                <li><strong>地图投影：</strong>使用Lambert正形圆锥投影（中国测绘标准），确保地图比例准确</li>
                             </ul>
                         </div>
                         
@@ -93,31 +102,14 @@
                                         </div>
                                     </div>
                                     <div class="card-body" id="highlightOptions" style="display: none;">
-                                        <div class="row">
-                                            <div class="col-md-12">
-                                                <h4 class="mb-3">突出显示区域</h4>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <h5>选择省份</h5>
-                                                <select id="highlightProvinceSelect" class="form-select">
-                                                    <option value="">请选择省份</option>
-                                                    <!-- 省份选项将通过JavaScript动态加载 -->
-                                                </select>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <h5>选择城市</h5>
-                                                <select id="highlightCitySelect" class="form-select" disabled>
-                                                    <option value="">请先选择省份</option>
-                                                    <!-- 城市选项将通过JavaScript动态加载 -->
-                                                </select>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <h5>选择县区</h5>
-                                                <select id="highlightCountySelect" class="form-select" disabled>
-                                                    <option value="">请先选择城市</option>
-                                                    <!-- 县区选项将通过JavaScript动态加载 -->
-                                                </select>
-                                            </div>
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <h4 class="mb-0">突出显示区域</h4>
+                                            <button type="button" class="btn btn-sm btn-primary" id="addHighlightRegion">
+                                                <span>+ 添加区域</span>
+                                            </button>
+                                        </div>
+                                        <div id="highlightRegionsContainer">
+                                            <!-- 突出显示区域将通过JavaScript动态添加 -->
                                         </div>
                                     </div>
                                 </div>
@@ -139,7 +131,8 @@
                                                     <input type="color" class="form-control form-control-color" id="baseColor" value="#EAEAEA" title="选择底图颜色">
                                                 </div>
                                             </div>
-                                            <div class="col-md-4">
+                                            <!-- 突出显示颜色已移至各个高亮区域中单独设置 -->
+                                            <div class="col-md-4" style="display: none;">
                                                 <div class="mb-3">
                                                     <label for="highlightColor" class="form-label">突出显示颜色</label>
                                                     <input type="color" class="form-control form-control-color" id="highlightColor" value="#7ED2F7" title="选择突出显示颜色">
@@ -285,11 +278,23 @@
         </div>
     </div>
     
-    <footer class="mt-5 text-center text-muted">
-        <p>中国地图生成器 by CHNLion © 2025</p>
+    <footer class="mt-5 mb-4 text-center text-muted">
+        <p class="mb-2">中国地图生成器 by CHNLion © 2025</p>
+        <p class="mb-0">
+            <a href="https://github.com/CHNLion/china-map-generator" target="_blank" class="text-decoration-none">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-github me-1" viewBox="0 0 16 16" style="vertical-align: text-bottom;">
+                    <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
+                </svg>
+                在 GitHub 上查看此项目
+            </a>
+        </p>
     </footer>
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Pickr 颜色选择器 -->
+    <script src="https://cdn.jsdelivr.net/npm/@simonwep/pickr/dist/pickr.min.js"></script>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/multi-highlight.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/color-picker.js') }}"></script>
 </body>
 </html> 

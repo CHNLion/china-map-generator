@@ -14,9 +14,19 @@ document.addEventListener('DOMContentLoaded', function() {
     // 获取DOM元素 - 高亮区域选择
     const enableHighlight = document.getElementById('enableHighlight');
     const highlightOptions = document.getElementById('highlightOptions');
-    const highlightProvinceSelect = document.getElementById('highlightProvinceSelect');
-    const highlightCitySelect = document.getElementById('highlightCitySelect');
-    const highlightCountySelect = document.getElementById('highlightCountySelect');
+    // 旧的高亮选择器已移除，创建兼容对象避免错误
+    const highlightProvinceSelect = document.getElementById('highlightProvinceSelect') || { 
+        value: '', disabled: false, options: [], selectedIndex: 0, 
+        addEventListener: function() {}, dispatchEvent: function() {}, innerHTML: '' 
+    };
+    const highlightCitySelect = document.getElementById('highlightCitySelect') || { 
+        value: '', disabled: true, options: [], selectedIndex: 0, 
+        addEventListener: function() {}, innerHTML: '' 
+    };
+    const highlightCountySelect = document.getElementById('highlightCountySelect') || { 
+        value: '', disabled: true, options: [], selectedIndex: 0, 
+        addEventListener: function() {}, innerHTML: '' 
+    };
     
     // 获取DOM元素 - 颜色设置
     const baseColor = document.getElementById('baseColor');
@@ -53,7 +63,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 加载省份数据
     loadProvinces();
-    loadHighlightProvinces();
+    // loadHighlightProvinces(); // 已由multi-highlight.js处理
     
     // 添加自定义标题切换事件
     enableCustomTitle.addEventListener('change', function() {
@@ -459,6 +469,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 添加生成按钮点击事件
     generateBtn.addEventListener('click', function() {
+        console.log('=== 生成按钮被点击 ===');
         generateMap();
     });
     
@@ -783,28 +794,36 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 生成地图并显示
     function generateMap() {
+        console.log('=== generateMap函数被调用 ===');
+        
         // 获取选择的地图类型
         const mapTypeValue = getSelectedMapType();
+        console.log('地图类型:', mapTypeValue);
         
         // 获取区域名称
         const regionName = getSelectedRegionName();
+        console.log('区域名称:', regionName);
         
-        // 获取高亮区域名称
-        const highlightRegionName = getHighlightRegionName();
+        // 获取多个高亮区域（从multi-highlight.js）
+        const highlightRegions = typeof window.getAllHighlightRegions === 'function' 
+            ? window.getAllHighlightRegions() 
+            : [];
+        console.log('高亮区域:', highlightRegions);
         
         // 获取颜色设置
         const colorSettings = getColorSettings();
+        console.log('颜色设置:', colorSettings);
         
         // 获取标题设置
         const titleSettings = getTitleSettings();
+        console.log('标题设置:', titleSettings);
         
         // 准备请求数据
         const requestData = {
             mapType: mapTypeValue === 'national' ? '省' : mapTypeValue,
             regionName: regionName,
-            highlightRegion: highlightRegionName,
+            highlightRegions: highlightRegions,  // 新的多区域参数
             baseColor: colorSettings.baseColor,
-            highlightColor: colorSettings.highlightColor,
             borderColor: colorSettings.borderColor,
             borderWidth: colorSettings.borderWidth,
             showLabels: colorSettings.showLabels,
@@ -815,6 +834,8 @@ document.addEventListener('DOMContentLoaded', function() {
             titleFontSize: titleSettings.titleFontSize,
             saveLocal: false  // 不保存到本地，使用Base64传输
         };
+        
+        console.log('请求数据:', requestData);
         
         // 显示加载指示器
         showLoadingIndicator();
@@ -827,7 +848,20 @@ document.addEventListener('DOMContentLoaded', function() {
             },
             body: JSON.stringify(requestData),
         })
-        .then(response => response.json())
+        .then(response => {
+            console.log('Response status:', response.status);
+            console.log('Response headers:', response.headers);
+            
+            // 如果不是200，先读取文本看看是什么错误
+            if (!response.ok) {
+                return response.text().then(text => {
+                    console.error('Error response text:', text);
+                    throw new Error(`HTTP ${response.status}: ${text.substring(0, 200)}`);
+                });
+            }
+            
+            return response.json();
+        })
         .then(data => {
             hideLoadingIndicator();
             
@@ -893,24 +927,18 @@ document.addEventListener('DOMContentLoaded', function() {
         let defaultTitle = '';
         
         // 优先使用"突出显示区域"生成标题
-        if (enableHighlight.checked && getHighlightRegionName()) {
-            // 构建完整的高亮区域路径
-            let pathParts = [];
+        if (enableHighlight.checked) {
+            // 使用多区域API
+            const highlightRegions = typeof window.getAllHighlightRegions === 'function' 
+                ? window.getAllHighlightRegions() 
+                : [];
             
-            if (highlightProvinceSelect.value) {
-                pathParts.push(highlightProvinceSelect.value);
-                
-                if (highlightCitySelect.value) {
-                    pathParts.push(highlightCitySelect.value);
-                    
-                    if (highlightCountySelect.value) {
-                        pathParts.push(highlightCountySelect.value);
-                    }
+            if (highlightRegions.length > 0) {
+                if (highlightRegions.length === 1) {
+                    defaultTitle = `${highlightRegions[0].name}行政区划图`;
+                } else {
+                    defaultTitle = `${highlightRegions[0].name}等${highlightRegions.length}个区域行政区划图`;
                 }
-            }
-            
-            if (pathParts.length > 0) {
-                defaultTitle = `${pathParts.join('')}行政区划图`;
             } else {
                 defaultTitle = "中国行政区划图";
             }

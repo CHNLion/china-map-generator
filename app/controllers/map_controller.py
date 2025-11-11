@@ -200,20 +200,114 @@ def hex_to_rgb(hex_color):
     # 返回0-1范围的RGB值
     return tuple(c/255 for c in rgb)
 
-def generate_map(map_type='省', region_name=None, highlight_region=None, 
-                 base_color="#EAEAEA", highlight_color="#FF5733", 
+def find_region_in_gdf(gdf, region_name, map_type, region_name_for_msg=''):
+    """
+    在GeoDataFrame中查找指定区域
+    
+    参数:
+        gdf: GeoDataFrame数据
+        region_name: 要查找的区域名称
+        map_type: 地图类型
+        region_name_for_msg: 用于筛选的父区域名称
+        
+    返回:
+        GeoDataFrame或None: 找到的区域数据
+    """
+    if not region_name or not region_name.strip():
+        return None
+    
+    region_name = region_name.strip()
+    
+    # 创建搜索变体
+    search_variants = []
+    if map_type == '市':
+        if not region_name.endswith('市'):
+            search_variants.append(region_name + '市')
+        search_variants.append(region_name)
+        if region_name.endswith('市'):
+            search_variants.append(region_name[:-1])
+    else:
+        search_variants = [region_name]
+    
+    # 定义可能的名称字段
+    name_fields = ['市', '省', '县', 'NAME', 'Name', 'name', 'CNAME', 'CName', 'cname']
+    
+    # 在当前地图中查找
+    for field in name_fields:
+        if field in gdf.columns:
+            for search_term in search_variants:
+                try:
+                    # 精确匹配
+                    exact_match = gdf[gdf[field] == search_term]
+                    if not exact_match.empty:
+                        print(f"找到精确匹配'{search_term}'的区域: {len(exact_match)}条")
+                        return exact_match
+                    
+                    # 包含匹配
+                    contains_match = gdf[gdf[field].str.contains(search_term, case=False, na=False)]
+                    if not contains_match.empty:
+                        print(f"找到包含'{search_term}'的区域: {len(contains_match)}条")
+                        return contains_match
+                except Exception as e:
+                    print(f"查找区域时出错: {str(e)}")
+    
+    # 尝试在下一级地图中查找（市级地图查县级）
+    if map_type == '市':
+        try:
+            county_path = os.path.join(SHP_FOLDER, '县.shp')
+            if os.path.exists(county_path):
+                county_gdf = gpd.read_file(county_path, encoding='utf-8')
+                if 'NAME' in county_gdf.columns and '市' in county_gdf.columns and region_name_for_msg:
+                    city_counties = county_gdf[county_gdf['市'] == region_name_for_msg]
+                    if not city_counties.empty:
+                        for search_term in search_variants:
+                            county_match = city_counties[city_counties['NAME'] == search_term]
+                            if not county_match.empty:
+                                # 确保坐标系一致
+                                if county_match.crs != gdf.crs:
+                                    county_match = county_match.to_crs(gdf.crs)
+                                print(f"在县级地图中找到'{search_term}'")
+                                return county_match
+        except Exception as e:
+            print(f"在县级地图中查找时出错: {str(e)}")
+    
+    # 尝试在市级地图中查找（省级地图查市级）
+    # 只有当指定了父区域（省份）时才查找
+    elif map_type == '省' and region_name_for_msg:
+        try:
+            city_path = os.path.join(SHP_FOLDER, '市.shp')
+            if os.path.exists(city_path):
+                city_gdf = gpd.read_file(city_path, encoding='utf-8')
+                if '市' in city_gdf.columns and '省' in city_gdf.columns:
+                    # 只查找当前省份下的市
+                    province_cities = city_gdf[city_gdf['省'] == region_name_for_msg]
+                    if not province_cities.empty:
+                        for search_term in search_variants:
+                            city_match = province_cities[province_cities['市'] == search_term]
+                            if not city_match.empty:
+                                # 确保坐标系一致
+                                if city_match.crs != gdf.crs:
+                                    city_match = city_match.to_crs(gdf.crs)
+                                print(f"在市级地图中找到'{search_term}'（属于{region_name_for_msg}）")
+                                return city_match
+        except Exception as e:
+            print(f"在市级地图中查找时出错: {str(e)}")
+    
+    return None
+
+def generate_map(map_type='省', region_name=None, highlight_regions=None, 
+                 base_color="#EAEAEA", 
                  border_color="white", border_width=0.5,
                  show_labels=True, showTitle=True, customTitle='', titleFontSize=15,
                  showCoordinates=False, coordinatesFontSize=20, save_local=False):
     """
-    生成地图图片，可以高亮显示特定区域
+    生成地图图片，可以高亮显示多个区域（每个区域可以有独立颜色）
     
     参数:
         map_type (str): 地图类型，可选 '省', '市', '县'
         region_name (str, optional): 筛选指定的区域名称
-        highlight_region (str, optional): 高亮显示的区域名称
+        highlight_regions (list, optional): 高亮显示的区域列表，每项包含 {'name': '区域名', 'color': '#颜色'}
         base_color (str): 底图颜色(十六进制)
-        highlight_color (str): 高亮区域颜色(十六进制)
         border_color (str): 边界线颜色
         border_width (float): 边界线宽度
         show_labels (bool): 是否显示标签
@@ -229,6 +323,10 @@ def generate_map(map_type='省', region_name=None, highlight_region=None,
     """
     # 设置中文字体
     set_chinese_font()
+    
+    # 处理高亮区域参数（支持新旧格式）
+    if highlight_regions is None:
+        highlight_regions = []
     
     # 检查map_type有效性
     if map_type not in ['省', '市', '县']:
@@ -386,8 +484,8 @@ def generate_map(map_type='省', region_name=None, highlight_region=None,
         
         # 强制转换为Lambert正形圆锥投影（确保使用平面投影）
         gdf = gdf.to_crs(asia_lcc_crs)
-        print(f"✓ 坐标系统已转换为Lambert正形圆锥投影（中国测绘标准：lat_1=25°, lat_2=47°）")
-        print(f"✓ 投影参数：中心经度105°，标准纬线25°和47°")
+        print(f"[OK] 坐标系统已转换为Lambert正形圆锥投影（中国测绘标准：lat_1=25, lat_2=47）")
+        print(f"[OK] 投影参数：中心经度105，标准纬线25和47")
     except Exception as e:
         print(f"尝试转换坐标系统时出错: {str(e)}")
         # 使用PROJ字符串定义Lambert正形圆锥投影
@@ -407,166 +505,49 @@ def generate_map(map_type='省', region_name=None, highlight_region=None,
             print(f"使用PROJ字符串转换坐标系时出错: {str(e2)}")
             original_crs = gdf.crs
     
-    # 处理高亮区域
-    highlight_gdf = None
-    base_gdf = gdf.copy()
+    # 处理多个高亮区域
+    highlight_gdfs_with_colors = []
     
-    if highlight_region and highlight_region.strip():
-        highlight_region = highlight_region.strip()
-        highlight_found = False
-        
-        # 创建高亮区域的搜索变体
-        highlight_search_variants = []
-        if map_type == '市':
-            if not highlight_region.endswith('市'):
-                highlight_search_variants.append(highlight_region + '市')
-            highlight_search_variants.append(highlight_region)
-            if highlight_region.endswith('市'):
-                highlight_search_variants.append(highlight_region[:-1])
-        else:
-            highlight_search_variants = [highlight_region]
-        
-        print(f"高亮区域搜索变体: {highlight_search_variants}")
-        
-        # 在当前地图中查找高亮区域
-        for field in possible_name_fields:
-            if field in gdf.columns:
-                print(f"使用{field}字段查找高亮区域")
-                
-                for search_term in highlight_search_variants:
-                    try:
-                        # 精确匹配
-                        exact_match = gdf[gdf[field] == search_term]
-                        if not exact_match.empty:
-                            highlight_gdf = exact_match
-                            highlight_found = True
-                            print(f"找到精确匹配'{search_term}'的高亮区域: {len(highlight_gdf)}条")
-                            break
-                        
-                        # 包含匹配
-                        contains_match = gdf[gdf[field].str.contains(search_term, case=False, na=False)]
-                        if not contains_match.empty:
-                            highlight_gdf = contains_match
-                            highlight_found = True
-                            print(f"找到包含'{search_term}'的高亮区域: {len(highlight_gdf)}条")
-                            break
-                    except Exception as e:
-                        print(f"查找高亮区域时出错: {str(e)}")
-                
-                if highlight_found:
-                    break
-        
-        # 如果在当前地图中找不到高亮区域，尝试在下一级地图中查找
-        if not highlight_found and map_type == '市':
-            # 尝试在县级地图中查找区县
-            try:
-                county_path = os.path.join(SHP_FOLDER, '县.shp')
-                if os.path.exists(county_path):
-                    print(f"在县级地图中查找高亮区域: {highlight_region}")
-                    county_gdf = gpd.read_file(county_path, encoding='utf-8')
-                    
-                    # 确保县级地图有必要的字段
-                    if 'NAME' in county_gdf.columns and '市' in county_gdf.columns:
-                        # 首先筛选出当前市下的所有县
-                        city_counties = county_gdf[county_gdf['市'] == region_name]
-                        
-                        if not city_counties.empty:
-                            # 在当前市的县中查找匹配的县区
-                            for search_term in highlight_search_variants:
-                                # 精确匹配县名
-                                county_match = city_counties[city_counties['NAME'] == search_term]
-                                if not county_match.empty:
-                                    highlight_gdf = county_match
-                                    highlight_found = True
-                                    print(f"在县级地图中找到匹配'{search_term}'的区县: {len(highlight_gdf)}条")
-                                    break
-                                
-                                # 包含匹配
-                                county_contains = city_counties[city_counties['NAME'].str.contains(search_term, case=False, na=False)]
-                                if not county_contains.empty:
-                                    highlight_gdf = county_contains
-                                    highlight_found = True
-                                    print(f"在县级地图中找到包含'{search_term}'的区县: {len(highlight_gdf)}条")
-                                    break
-            except Exception as e:
-                print(f"在县级地图中查找高亮区域时出错: {str(e)}")
-        
-        # 同样，如果是县级地图，也尝试在对应市的县级数据中查找
-        elif not highlight_found and map_type == '省':
-            # 尝试在市级地图中查找
-            try:
-                city_path = os.path.join(SHP_FOLDER, '市.shp')
-                if os.path.exists(city_path):
-                    print(f"在市级地图中查找高亮区域: {highlight_region}")
-                    city_gdf = gpd.read_file(city_path, encoding='utf-8')
-                    
-                    # 确保市级地图有必要的字段
-                    if '市' in city_gdf.columns and '省' in city_gdf.columns:
-                        # 首先筛选出当前省下的所有市
-                        if is_national_map:
-                            # 如果是全国地图，不筛选省份
-                            province_cities = city_gdf
-                        else:
-                            province_cities = city_gdf[city_gdf['省'] == region_name]
-                        
-                        if not province_cities.empty:
-                            # 在当前省的市中查找匹配的市
-                            for search_term in highlight_search_variants:
-                                # 精确匹配市名
-                                city_match = province_cities[province_cities['市'] == search_term]
-                                if not city_match.empty:
-                                    highlight_gdf = city_match
-                                    highlight_found = True
-                                    print(f"在市级地图中找到匹配'{search_term}'的城市: {len(highlight_gdf)}条")
-                                    break
-                                
-                                # 包含匹配
-                                city_contains = province_cities[province_cities['市'].str.contains(search_term, case=False, na=False)]
-                                if not city_contains.empty:
-                                    highlight_gdf = city_contains
-                                    highlight_found = True
-                                    print(f"在市级地图中找到包含'{search_term}'的城市: {len(highlight_gdf)}条")
-                                    break
-            except Exception as e:
-                print(f"在市级地图中查找高亮区域时出错: {str(e)}")
-        
-        if not highlight_found:
-            print(f"警告: 未找到高亮区域'{highlight_region}'")
+    print(f"收到 {len(highlight_regions)} 个高亮区域")
+    print(f"底图区域: {region_name if region_name else '全国'}, 地图类型: {map_type}")
     
-    # 绘制地图 - 修复坐标系问题
-    if highlight_gdf is not None:
-        # 区分是否是完全相同的区域
-        if highlight_gdf.equals(gdf):
-            print("高亮区域与选择区域相同，使用单一样式渲染")
-            # 如果高亮区域和选择区域完全相同，只绘制一次
-            gdf.plot(ax=ax, color=highlight_color, edgecolor=border_color, linewidth=border_width)
+    for hr_item in highlight_regions:
+        if not isinstance(hr_item, dict):
+            print(f"跳过无效的高亮区域项: {hr_item}")
+            continue
+        
+        hr_name = hr_item.get('name', '').strip()
+        hr_color = hr_item.get('color', '#FF5733')
+        
+        if not hr_name:
+            continue
+        
+        print(f"查找高亮区域: {hr_name} (颜色: {hr_color})")
+        
+        # 使用辅助函数查找区域
+        found_gdf = find_region_in_gdf(gdf, hr_name, map_type, region_name)
+        
+        if found_gdf is not None and not found_gdf.empty:
+            # 确保坐标系一致
+            if found_gdf.crs != gdf.crs:
+                found_gdf = found_gdf.to_crs(gdf.crs)
+            
+            highlight_gdfs_with_colors.append((found_gdf, hr_color))
+            print(f"[OK] 成功添加高亮区域 '{hr_name}' (颜色: {hr_color})")
         else:
-            # 处理跨级别高亮显示的情况（如市级地图高亮显示县级区域）
-            if 'geometry' not in highlight_gdf.columns:
-                print("高亮数据没有几何信息，无法绘制")
-            else:
-                # 确保高亮区域与主地图使用相同的坐标系统
-                try:
-                    # 检查高亮区域的坐标系统
-                    if highlight_gdf.crs != gdf.crs:
-                        print(f"高亮区域和底图坐标系不同，将高亮区域从 {highlight_gdf.crs} 转换为 {gdf.crs}")
-                        highlight_gdf = highlight_gdf.to_crs(gdf.crs)
-                except Exception as e:
-                    print(f"转换高亮区域坐标系时出错: {str(e)}")
-                
-                # 绘制底图
-                gdf.plot(ax=ax, color=base_color, edgecolor=border_color, linewidth=border_width)
-                
-                # 绘制高亮区域
-                try:
-                    highlight_gdf.plot(ax=ax, color=highlight_color, edgecolor=border_color, linewidth=border_width)
-                    print("成功绘制高亮区域")
-                except Exception as e:
-                    print(f"绘制高亮区域时出错: {str(e)}")
-                    # 如果高亮区域绘制失败，至少保证底图正常显示
-    else:
-        # 没有高亮区域，直接绘制完整地图
-        gdf.plot(ax=ax, color=base_color, edgecolor=border_color, linewidth=border_width)
+            print(f"警告: 未找到高亮区域 '{hr_name}'")
+    
+    # 绘制地图
+    # 先绘制底图
+    gdf.plot(ax=ax, color=base_color, edgecolor=border_color, linewidth=border_width)
+    
+    # 再绘制所有高亮区域（按顺序，每个用各自的颜色）
+    for highlight_gdf, highlight_color in highlight_gdfs_with_colors:
+        try:
+            highlight_gdf.plot(ax=ax, color=highlight_color, edgecolor=border_color, linewidth=border_width)
+            print(f"成功绘制高亮区域 (颜色: {highlight_color})")
+        except Exception as e:
+            print(f"绘制高亮区域时出错: {str(e)}")
     
     # 设置坐标轴宽高比，修复地图比例问题
     # 对于墨卡托投影地图使用'equal'确保比例正确
@@ -645,7 +626,8 @@ def generate_map(map_type='省', region_name=None, highlight_region=None,
                         font_size = 8 if len(labeled_gdf) > 30 else 10
                         
                         # 如果是高亮区域，使用白色文本以提高可见度
-                        label_color = 'white' if highlight_gdf is not None and idx in highlight_gdf.index else 'black'
+                        is_highlighted = any(idx in h_gdf.index for h_gdf, _ in highlight_gdfs_with_colors)
+                        label_color = 'white' if is_highlighted else 'black'
                         
                         ax.text(x, y, label, 
                                 fontsize=font_size, ha='center', va='center', color=label_color)
@@ -857,8 +839,11 @@ def generate_map(map_type='省', region_name=None, highlight_region=None,
                 if filtered and original_region_name:
                     map_title = f"{map_type}级地图 - {original_region_name}区域"
             
-            if highlight_region:
-                map_title += f" (高亮: {highlight_region})"
+            if highlight_regions and len(highlight_regions) > 0:
+                if len(highlight_regions) == 1:
+                    map_title += f" (高亮: {highlight_regions[0]['name']})"
+                else:
+                    map_title += f" (高亮: {len(highlight_regions)}个区域)"
         
         # 设置标题及字体大小
         ax.set_title(map_title, fontsize=titleFontSize)
@@ -889,9 +874,12 @@ def generate_map(map_type='省', region_name=None, highlight_region=None,
             safe_region_name = ''.join(e for e in original_region_name if e.isalnum())
         name_parts.append(safe_region_name)
     
-    if highlight_region:
-        safe_highlight_name = ''.join(e for e in highlight_region if e.isalnum())
-        name_parts.append(f"hl_{safe_highlight_name}")
+    if highlight_regions and len(highlight_regions) > 0:
+        if len(highlight_regions) == 1:
+            safe_highlight_name = ''.join(e for e in highlight_regions[0]['name'] if e.isalnum())
+            name_parts.append(f"hl_{safe_highlight_name}")
+        else:
+            name_parts.append(f"hl_{len(highlight_regions)}regions")
     
     if name_parts:
         if is_national_map:

@@ -22,9 +22,14 @@ def create_map():
     region_name = data.get('regionName', '').strip()  # 可选的区域名称筛选
     
     # 新增高亮和颜色自定义参数
-    highlight_region = data.get('highlightRegion', '').strip()  # 高亮区域名称
+    highlight_regions = data.get('highlightRegions', [])  # 多个高亮区域（包含区域名和颜色）
+    # 兼容旧版单区域参数
+    if not highlight_regions and data.get('highlightRegion'):
+        highlight_regions = [{
+            'name': data.get('highlightRegion').strip(),
+            'color': data.get('highlightColor', '#FF5733')
+        }]
     base_color = data.get('baseColor', '#EAEAEA')  # 底图颜色
-    highlight_color = data.get('highlightColor', '#FF5733')  # 高亮区域颜色
     border_color = data.get('borderColor', 'white')  # 边界线颜色
     border_width = float(data.get('borderWidth', 0.5))  # 边界线宽度
     show_labels = data.get('showLabels', True)  # 是否显示标签
@@ -41,7 +46,7 @@ def create_map():
     # 新增本地保存控制参数
     save_local = data.get('saveLocal', False)  # 是否保存到本地文件系统
     
-    print(f"接收到地图生成请求: 类型={map_type}, 区域名称={region_name}, 高亮区域={highlight_region}")
+    print(f"接收到地图生成请求: 类型={map_type}, 区域名称={region_name}, 高亮区域={highlight_regions}")
     if show_title and custom_title:
         print(f"自定义标题: '{custom_title}', 字体大小: {title_font_size}")
     if show_coordinates:
@@ -53,9 +58,8 @@ def create_map():
         result = generate_map(
             map_type=map_type, 
             region_name=region_name,
-            highlight_region=highlight_region,
+            highlight_regions=highlight_regions,  # 传递多区域数组
             base_color=base_color,
-            highlight_color=highlight_color,
             border_color=border_color,
             border_width=border_width,
             show_labels=show_labels,
@@ -71,7 +75,7 @@ def create_map():
             'success': True,
             'mapType': map_type,
             'regionName': region_name,
-            'highlightRegion': highlight_region
+            'highlightRegions': highlight_regions
         }
         
         # 根据保存模式返回不同的数据
@@ -93,7 +97,7 @@ def create_map():
             'error': str(e),
             'mapType': map_type,
             'regionName': region_name,
-            'highlightRegion': highlight_region
+            'highlightRegions': highlight_regions
         }), 500
 
 @app.route('/api/regions', methods=['GET'])
