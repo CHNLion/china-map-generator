@@ -144,10 +144,13 @@ def get_map_image(filename):
     """获取生成的地图图片"""
     return send_file(os.path.join('app/static/maps', filename))
 
+# 确保地图保存目录存在
+os.makedirs('app/static/maps', exist_ok=True)
+
+# Vercel 需要导出 app 对象
+# 在 Vercel 上运行时不需要 app.run()
+
 if __name__ == '__main__':
-    # 确保地图保存目录存在
-    os.makedirs('app/static/maps', exist_ok=True)
-    
-    # 启动应用
+    # 本地开发时启动应用
     debug = os.environ.get('FLASK_DEBUG', 'True').lower() == 'true'
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)), debug=debug) 

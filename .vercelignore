@@ -1,0 +1,11 @@
+myenv
+venv
+env
+__pycache__
+*.pyc
+.vscode
+.idea
+.DS_Store
+*.log
+app/static/maps/*.png
+

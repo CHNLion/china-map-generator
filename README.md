@@ -163,15 +163,25 @@
 - **Bootstrap 5** - UI框架
 - **Pickr** - 高级颜色选择器
 
-## 🚀 安装指南
+## 🚀 快速开始
 
-### 前提条件
+### 在线部署（推荐）
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/CHNLion/china-map-generator)
+
+点击上方按钮，一键部署到 Vercel！
+
+详细部署说明请查看 [DEPLOYMENT.md](DEPLOYMENT.md)
+
+### 本地安装
+
+#### 前提条件
 
 - Python 3.9 或更高版本
 - pip 包管理器
 - Git（可选，用于克隆仓库）
 
-### 安装步骤
+#### 安装步骤
 
 1. **克隆仓库**
 
