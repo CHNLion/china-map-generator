@@ -4,6 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>中国地图生成器</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='favicon-16x16.png') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='favicon-32x32.png') }}">
+    <link rel="icon" type="image/png" sizes="48x48" href="{{ url_for('static', filename='favicon-48x48.png') }}">
+    
+    <!-- Web App Manifest -->
+    <link rel="manifest" href="{{ url_for('static', filename='site.webmanifest') }}">
+    
+    <!-- Theme Color -->
+    <meta name="theme-color" content="#0ba6a9">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="地图生成器">
+    
+    <!-- Stylesheets -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css">
     <!-- Pickr 颜色选择器 -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@simonwep/pickr/dist/themes/nano.min.css">
@@ -19,30 +36,50 @@
                     </div>
                     <div class="card-body">
                         <div class="alert alert-info">
-                            <h5>使用说明</h5>
-                            <ul>
-                                <li><strong>行政分界选择：</strong>选择地图显示的行政边界级别（全国、省、市或县级边界）</li>
-                                <li><strong>底图区域：</strong>选择要显示的具体区域，系统将根据您最后选择的级别确定显示范围</li>
-                                <li><strong>多区域突出显示：</strong>
-                                    <ul class="mt-1 mb-1">
-                                        <li>可同时突出显示多个区域，每个区域可设置不同颜色</li>
-                                        <li>突出显示区域会自动跟随底图区域（智能锁定）</li>
-                                        <li>点击"+ 添加区域"可添加更多突出区域，点击"删除"移除不需要的区域</li>
-                                    </ul>
-                                </li>
-                                <li><strong>高级颜色选择：</strong>使用Pickr颜色选择器，支持RGB、HSL、HEX模式和预设颜色板</li>
-                                <li><strong>显示地区名称：</strong>控制是否在地图上显示地区名称标签</li>
-                                <li><strong>显示图片名称：</strong>控制是否在地图顶部显示标题，可自定义标题内容和字体大小</li>
-                                <li><strong>显示经纬度坐标：</strong>控制是否在地图上显示经纬度网格和坐标，可调整字体大小（10-30）</li>
-                                <li><strong>显示比例尺：</strong>
-                                    <ul class="mt-1 mb-1">
-                                        <li>三种专业样式：分段式（黑白交替）、刻度线式、双行交替式</li>
-                                        <li>比例尺自动根据地图大小计算，确保比例准确</li>
-                                        <li>可自定义位置（四个角落）和字体大小</li>
-                                    </ul>
-                                </li>
-                                <li><strong>地图投影：</strong>使用Lambert正形圆锥投影（中国测绘标准），确保地图比例准确</li>
-                            </ul>
+                            <h5 class="mb-0">
+                                <button class="btn btn-link text-decoration-none p-0 text-start w-100 d-flex justify-content-between align-items-center" 
+                                        type="button" 
+                                        data-bs-toggle="collapse" 
+                                        data-bs-target="#usageInstructions" 
+                                        aria-expanded="false" 
+                                        aria-controls="usageInstructions"
+                                        style="color: #055160; font-weight: 600;">
+                                    使用说明
+                                    <span class="toggle-icon">▼</span>
+                                </button>
+                            </h5>
+                            <div class="collapse" id="usageInstructions">
+                                <ul class="mt-3 mb-0">
+                                    <li><strong>行政分界选择：</strong>选择地图显示的行政边界级别（全国、省、市或县级边界）</li>
+                                    <li><strong>底图区域：</strong>选择要显示的具体区域，系统将根据您最后选择的级别确定显示范围</li>
+                                    <li><strong>多区域突出显示：</strong>
+                                        <ul class="mt-1 mb-1">
+                                            <li>可同时突出显示多个区域，每个区域可设置不同颜色</li>
+                                            <li>突出显示区域会自动跟随底图区域（智能锁定）</li>
+                                            <li>点击"+ 添加区域"可添加更多突出区域，点击"删除"移除不需要的区域</li>
+                                        </ul>
+                                    </li>
+                                    <li><strong>高级颜色选择：</strong>
+                                        <ul class="mt-1 mb-1">
+                                            <li>使用 Pickr 专业颜色选择器，支持渐变色板、色相滑块和预设颜色</li>
+                                            <li>拖动选色圈选择颜色，释放鼠标后自动应用并关闭</li>
+                                            <li>点击预设色块可快速选择常用颜色</li>
+                                            <li><strong>吸管取色工具：</strong>点击调色板中的吸管图标，可从屏幕任意位置取色（需Chrome/Edge浏览器支持）</li>
+                                        </ul>
+                                    </li>
+                                    <li><strong>显示地区名称：</strong>控制是否在地图上显示地区名称标签</li>
+                                    <li><strong>显示图片名称：</strong>控制是否在地图顶部显示标题，可自定义标题内容和字体大小</li>
+                                    <li><strong>显示经纬度坐标：</strong>控制是否在地图上显示经纬度网格和坐标，可调整字体大小（10-30）</li>
+                                    <li><strong>显示比例尺：</strong>
+                                        <ul class="mt-1 mb-1">
+                                            <li>三种专业样式：分段式（黑白交替）、刻度线式、双行交替式</li>
+                                            <li>比例尺自动根据地图大小计算，确保比例准确</li>
+                                            <li>可自定义位置（四个角落）和字体大小</li>
+                                        </ul>
+                                    </li>
+                                    <li><strong>地图投影：</strong>使用Lambert正形圆锥投影（中国测绘标准），确保地图比例准确</li>
+                                </ul>
+                            </div>
                         </div>
                         
                         <div class="row mb-4">

@@ -1,0 +1,24 @@
+{
+    "name": "中国地图生成器",
+    "short_name": "地图生成器",
+    "description": "基于 Flask 和 GeoPandas 的中国地图生成工具",
+    "icons": [
+        {
+            "src": "/static/favicon-192x192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "/static/favicon-512x512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ],
+    "start_url": "/",
+    "display": "standalone",
+    "theme_color": "#0ba6a9",
+    "background_color": "#ffffff",
+    "orientation": "portrait-primary"
+}

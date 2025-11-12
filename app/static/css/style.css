@@ -200,4 +200,67 @@ footer {
 
 .card .card .card-header {
     background-color: #f1f3f5;
+}
+
+/* 吸管按钮样式优化 */
+.pcr-eyedropper-btn {
+    transition: all 0.2s ease;
+    min-width: 32px;
+}
+
+.pcr-eyedropper-btn:hover {
+    background-color: #f8f9fa !important;
+    border-color: #0d6efd !important;
+    transform: scale(1.05);
+}
+
+.pcr-eyedropper-btn:active {
+    transform: scale(0.95);
+    background-color: #e9ecef !important;
+}
+
+.pcr-eyedropper-btn svg {
+    display: block;
+    pointer-events: none;
+}
+
+/* 优化 Pickr 输入框和按钮对齐 */
+.pcr-interaction .pcr-result {
+    flex: 1;
+    min-width: 0;
+}
+
+/* 隐藏 HEXA 格式切换按钮（只使用 HEX 格式） */
+.pcr-interaction .pcr-type {
+    display: none !important;
+}
+
+/* 隐藏 Save 和 Cancel 按钮 */
+.pcr-interaction .pcr-save,
+.pcr-interaction .pcr-cancel {
+    display: none !important;
+}
+
+/* 调整 interaction 区域的布局 */
+.pcr-interaction {
+    padding: 8px !important;
+}
+
+/* 使用说明折叠按钮样式 */
+.alert-info .btn-link:hover {
+    text-decoration: none !important;
+    opacity: 0.8;
+}
+
+.alert-info .btn-link:focus {
+    box-shadow: none !important;
+}
+
+.alert-info .toggle-icon {
+    transition: transform 0.3s ease;
+    font-size: 0.9em;
+}
+
+.alert-info .btn-link[aria-expanded="true"] .toggle-icon {
+    transform: rotate(180deg);
 } 
