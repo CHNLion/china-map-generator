@@ -45,10 +45,10 @@
 - **智能文件命名**：根据区域和时间戳自动命名
 
 ### 🚀 灵活的部署方式
-- **一键部署到 Vercel**：无需配置服务器，点击按钮即可部署
-- **无服务器架构**：支持 Serverless 部署，自动扩展
+- **一键部署**：支持 Render、Railway 等平台的一键部署
+- **Docker 容器化**：提供 Dockerfile 和 docker-compose.yml
 - **本地运行**：支持传统本地部署方式
-- **详细部署文档**：提供完整的部署指南和故障排除
+- **详细部署文档**：提供多种部署方案和故障排除指南
 
 ## 🎯 使用场景
 
@@ -173,9 +173,29 @@
 
 ### 在线部署（推荐）
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/CHNLion/china-map-generator)
+由于项目使用 GeoPandas 等地理空间库，建议使用以下平台部署：
 
-点击上方按钮，一键部署到 Vercel！
+#### **Render** (推荐) ✅
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/CHNLion/china-map-generator)
+
+- 完整的 Linux 环境，支持所有依赖
+- 免费额度充足
+- 自动部署和 HTTPS
+
+#### **Railway** ✅
+
+[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new/template?template=https://github.com/CHNLion/china-map-generator)
+
+- 支持 Docker 部署
+- 简单易用
+- 自动 HTTPS 和域名
+
+#### **Docker** 🐳
+
+```bash
+docker-compose up -d
+```
 
 详细部署说明请查看 [DEPLOYMENT.md](DEPLOYMENT.md)
 
@@ -431,11 +451,12 @@ A: 修改 `app/static/js/multi-highlight.js` 中的 `defaultColors` 数组
   - 添加 Web App Manifest 文件
   - 支持添加到主屏幕（移动设备）
   - 自定义主题颜色
-- 🚀 添加 Vercel 一键部署支持
-  - 配置无服务器部署环境
-  - 添加 vercel.json 和 .vercelignore
+- 🚀 添加多种部署方案支持
+  - 添加 Docker 容器化支持（Dockerfile + docker-compose.yml）
+  - 添加 Render 部署配置（render.yaml）
   - 提供详细的部署指南（DEPLOYMENT.md）
-  - README 添加一键部署按钮
+  - README 添加多平台部署按钮
+  - 说明 GeoPandas 在无服务器环境的限制
 - 📝 更新使用说明和README文档
 
 ### v2.1.0 (2025-01-11)

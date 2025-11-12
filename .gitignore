@@ -36,3 +36,6 @@ app/static/maps/*.png
 # Environment variables
 .env
 
+# Docker
+.dockerignore
+

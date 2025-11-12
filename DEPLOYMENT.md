@@ -104,14 +104,43 @@ vercel
 
 ## 🐛 常见问题
 
-### 部署失败
+### 部署失败 - 依赖安装错误
 
-**问题**: 依赖安装失败
+**问题**: pip 安装依赖时失败，特别是 GeoPandas 相关依赖
 
-**解决**:
-- 检查 `requirements.txt` 格式
-- 确保所有依赖版本兼容
-- 查看 Vercel 部署日志
+**原因**: 
+- GeoPandas、GDAL、pyproj 等地理空间库在 Vercel 无服务器环境中难以安装
+- 这些库需要系统级依赖（如 GDAL、GEOS、PROJ）
+- Vercel 的 Python 运行时限制了某些二进制包的安装
+
+**解决方案**:
+
+⚠️ **重要提示**: 由于 GeoPandas 的复杂依赖，**Vercel 部署可能不是最佳选择**。
+
+**推荐的替代部署方案**:
+
+1. **Render** (推荐) ✅
+   - 完整的 Linux 环境
+   - 支持所有 Python 地理空间库
+   - 免费额度充足
+   - 部署教程: https://render.com/docs/deploy-flask
+
+2. **Railway** ✅
+   - 支持 Docker 部署
+   - 完整的系统依赖支持
+   - 简单易用
+   - 网站: https://railway.app
+
+3. **Heroku** ✅
+   - 成熟的 PaaS 平台
+   - 支持 Buildpacks
+   - 需要信用卡（免费额度）
+   - 网站: https://www.heroku.com
+
+4. **自建 Docker 容器** ✅
+   - 最灵活的方案
+   - 完全控制环境
+   - 可部署到任何支持 Docker 的平台
 
 ### 超时错误
 

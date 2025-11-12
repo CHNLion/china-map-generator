@@ -3,7 +3,10 @@
   "builds": [
     {
       "src": "app.py",
-      "use": "@vercel/python"
+      "use": "@vercel/python",
+      "config": {
+        "maxLambdaSize": "50mb"
+      }
     }
   ],
   "routes": [
@@ -14,6 +17,12 @@
   ],
   "env": {
     "FLASK_ENV": "production"
+  },
+  "functions": {
+    "app.py": {
+      "memory": 3008,
+      "maxDuration": 60
+    }
   }
 }
 
