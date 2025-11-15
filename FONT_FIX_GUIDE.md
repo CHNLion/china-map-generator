@@ -14,7 +14,7 @@
 
 ---
 
-## 🔧 技术实现（v2.2.1）
+## 🔧 技术实现（v2.2.1+）
 
 项目通过以下方式确保中文正常显示：
 
@@ -27,18 +27,22 @@
    ```python
    # 优先级：项目字体 > Linux系统字体 > Windows字体
    font_prop = fm.FontProperties(fname=font_file_path)
-   fm.fontManager.addfont(font_file_path)
+   fm.fontManager.addfont(font_file_path)  # 注册到字体管理器
    ```
 
 3. **显式字体应用**：
    - 所有文本元素（标签、标题、比例尺等）都通过 `fontproperties` 参数显式指定字体
-   - 不依赖matplotlib的全局字体配置
+   - 使用包装函数 `add_text_with_font()` 统一处理
+   - 不依赖matplotlib的全局字体配置，确保稳定性
 
 ---
 
-## 🛠️ 备用方案（仅在v2.2.1失效时使用）
+## 🛠️ 备用方案（仅在出现问题时使用）
 
-### 方案1：修改Render构建命令
+> **注意**：从 v2.2.1 版本开始，字体文件已内置，通常无需使用备用方案。
+> 以下方案仅在遇到特殊情况时参考。
+
+### 方案1：修改Render构建命令（不推荐）
 
 1. 登录 [Render Dashboard](https://dashboard.render.com/)
 2. 选择你的服务（china-map-generator）
@@ -60,58 +64,45 @@ pip install -r requirements.txt && apt-get update && apt-get install -y fonts-no
 
 ---
 
-### 方案2：提交字体文件到Git仓库
+### 方案2：重新下载字体文件
 
-如果你有Git仓库的写权限，可以直接添加字体文件：
-
-#### 步骤1：下载字体文件
+如果字体文件损坏或缺失，可以重新下载：
 
 ```bash
 # 在本地项目目录
 cd app/static/fonts
 
-# 下载思源黑体（约6-8MB）
+# 下载思源黑体（15.8MB）
 # 使用腾讯云镜像（国内速度快）
-wget https://mirrors.cloud.tencent.com/noto-cjk/NotoSansCJKsc-Regular.otf -O NotoSansSC-Regular.otf
+wget https://mirrors.cloud.tencent.com/noto-cjk/NotoSansCJKsc-Regular.otf -O SourceHanSansSC-Regular.otf
 
-# 或使用GitHub（国外速度快）
-wget https://github.com/googlefonts/noto-cjk/releases/download/Sans2.004/SourceHanSansSC-Regular.otf -O NotoSansSC-Regular.otf
+# 或从Adobe GitHub仓库下载
+wget https://github.com/adobe-fonts/source-han-sans/raw/release/OTF/SimplifiedChinese/SourceHanSansSC-Regular.otf
 ```
 
-#### 步骤2：提交到Git
-
+提交到Git：
 ```bash
-git add app/static/fonts/NotoSansSC-Regular.otf
-git commit -m "Add Chinese font for Linux deployment"
+git add app/static/fonts/SourceHanSansSC-Regular.otf
+git commit -m "Update Chinese font file"
 git push origin main
 ```
 
-#### 步骤3：Render会自动重新部署
-
-**优点**：
-- ✅ 不需要修改构建命令
-- ✅ 字体随代码一起部署
-- ✅ 适合团队协作
-
-**缺点**：
-- ❌ 增加仓库大小（约6-8MB）
-- ❌ 如果使用GitHub免费版，可能影响速度
-
 ---
 
-### 方案3：使用Linux安装脚本
+### 方案3：使用系统字体（自建服务器）
 
-如果你有SSH访问权限（自建服务器），可以使用提供的安装脚本：
+如果你有SSH访问权限，可以直接安装系统字体：
 
 ```bash
-# 下载并运行安装脚本
-chmod +x install_fonts.sh
-./install_fonts.sh
-```
+# Debian/Ubuntu
+sudo apt-get update
+sudo apt-get install -y fonts-noto-cjk fonts-wqy-microhei
+sudo fc-cache -fv
 
-按提示选择：
-- **选项1**：安装系统字体（需要sudo权限）
-- **选项2**：下载字体到项目目录
+# CentOS/RHEL  
+sudo yum install -y wqy-microhei-fonts
+sudo fc-cache -fv
+```
 
 ---
 

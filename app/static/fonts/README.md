@@ -1,72 +1,77 @@
 # 字体文件说明
 
+## 📁 当前字体文件
+
+本目录包含：
+- **SourceHanSansSC-Regular.otf** (15.8MB) - Adobe 思源黑体 SC Regular
+
 ## 为什么需要字体文件？
 
 在Linux服务器（如Render、Railway）上部署时，系统默认没有中文字体，导致地图上的中文显示为方框（□□□）。
 
-## 解决方案
+## ✅ 自动加载
 
-### 方法1：使用项目自带字体（推荐）
-
-将开源中文字体文件放在此目录下，程序会自动加载。
-
-**推荐字体**：
-- **思源黑体** (Noto Sans SC) - Google开源字体
-- **文泉驿微米黑** (WenQuanYi Micro Hei) - 开源黑体
-- **文泉驿正黑** (WenQuanYi Zen Hei) - 开源正黑体
-
-### 下载字体
-
-#### 思源黑体 (Noto Sans SC) - 推荐
-```bash
-# 下载OTF格式
-wget https://mirrors.cloud.tencent.com/noto-cjk/NotoSansCJKsc-Regular.otf -O app/static/fonts/NotoSansSC-Regular.otf
-
-# 或者从GitHub下载（可能较慢）
-wget https://github.com/googlefonts/noto-cjk/raw/main/Sans/OTF/SimplifiedChinese/NotoSansSC-Regular.otf -O app/static/fonts/NotoSansSC-Regular.otf
-```
-
-#### 文泉驿微米黑
-```bash
-# Debian/Ubuntu
-apt-get install -y fonts-wqy-microhei
-
-# 或直接下载TTF文件
-wget https://www.wqy.org/download/wqy-microhei-0.2.0-beta.tar.gz
-tar -xzf wqy-microhei-0.2.0-beta.tar.gz
-cp wqy-microhei/wqy-microhei.ttc app/static/fonts/
-```
-
-### 方法2：系统安装字体
-
-在服务器上安装字体包：
-
-```bash
-# Debian/Ubuntu
-apt-get update
-apt-get install -y fonts-noto-cjk fonts-wqy-microhei fonts-wqy-zenhei
-
-# CentOS/RHEL
-yum install -y wqy-microhei-fonts wqy-zenhei-fonts
-```
-
-## 字体文件要求
-
-- 格式：`.ttf`, `.otf`, `.ttc` 均可
-- 必须支持中文简体
-- 建议文件大小：5-15MB
-
-## 当前支持的字体
+项目会自动优先使用此目录下的字体文件，无需手动配置。
 
 程序会按以下优先级查找字体：
-1. `app/static/fonts/` 目录下的字体文件
-2. 系统字体：Noto Sans CJK SC, WenQuanYi Micro Hei, WenQuanYi Zen Hei, Droid Sans Fallback
-3. Windows系统字体：Microsoft YaHei (微软雅黑), SimHei (黑体)
+1. **本目录下的字体文件** （最高优先级）
+   - SourceHanSansSC-Regular.otf
+   - NotoSansSC-Regular.otf
+   - wqy-microhei.ttc
+2. Linux系统字体路径
+3. Windows系统字体路径
+4. macOS系统字体路径
 
-## 验证字体
+## 📝 添加其他字体
 
-部署后可以通过以下方式验证：
-1. 生成一张地图查看是否显示正常
-2. 查看日志输出，确认使用的字体路径
+如需添加其他字体，支持以下格式：
+- `.otf` (OpenType Font)
+- `.ttf` (TrueType Font)
+- `.ttc` (TrueType Collection)
+
+**推荐的开源中文字体**：
+- **思源黑体** (Source Han Sans / Noto Sans SC) - 已内置 ✓
+- **文泉驿微米黑** (WenQuanYi Micro Hei) - 轻量级
+- **文泉驿正黑** (WenQuanYi Zen Hei) - 传统风格
+
+### 下载其他字体
+
+如需替换或添加其他字体：
+
+```bash
+# 文泉驿微米黑（2-3MB，更小）
+wget https://github.com/anthonyfok/fonts-wqy-microhei/raw/master/wqy-microhei.ttc
+
+# 思源黑体（备用下载地址）
+wget https://mirrors.cloud.tencent.com/noto-cjk/NotoSansCJKsc-Regular.otf
+```
+
+## 🔍 验证字体
+
+### 查看日志输出
+
+程序启动时会输出字体加载信息：
+
+```
+✓ 成功加载中文字体: app/static/fonts/SourceHanSansSC-Regular.otf
+  字体名称: Source Han Sans SC
+  字体将强制应用到所有matplotlib绘图
+```
+
+### 生成测试地图
+
+访问应用并生成一张地图，检查：
+- ✅ 地区名称标签显示正常
+- ✅ 地图标题显示正常
+- ✅ 比例尺文字显示正常
+
+## 📚 更多信息
+
+详细的字体问题解决方案，请参考：[FONT_FIX_GUIDE.md](../../../FONT_FIX_GUIDE.md)
+
+---
+
+**最后更新**：2025-11-15  
+**当前版本**：v2.2.1+
 
 
