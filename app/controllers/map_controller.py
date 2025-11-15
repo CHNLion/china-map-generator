@@ -434,7 +434,7 @@ def generate_map(map_type='省', region_name=None, highlight_regions=None,
         """添加文本，自动应用中文字体"""
         if chinese_font:
             kwargs['fontproperties'] = chinese_font
-        return add_text_with_font(ax, x, y, text, **kwargs)
+        return ax.text(x, y, text, **kwargs)
     
     # 处理高亮区域参数（支持新旧格式）
     if highlight_regions is None:
