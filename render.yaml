@@ -3,7 +3,7 @@ services:
     name: china-map-generator
     env: python
     plan: free
-    buildCommand: pip install -r requirements.txt
+    buildCommand: pip install -r requirements.txt && apt-get update && apt-get install -y fonts-noto-cjk fonts-wqy-microhei fontconfig && fc-cache -fv
     startCommand: python app.py
     envVars:
       - key: FLASK_ENV

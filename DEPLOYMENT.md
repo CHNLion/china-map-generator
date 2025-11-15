@@ -218,6 +218,98 @@ python app.py
 
 ## 🐛 常见问题
 
+### ⚠️ 地图中文显示为方框（最常见）
+
+**问题**：部署到Linux服务器后，生成的地图中所有中文都显示为方框（□□□）
+
+**原因**：Linux服务器默认没有中文字体
+
+**解决方案**（三选一）：
+
+#### 方案1：使用项目自带字体（推荐）⭐
+
+在项目 `app/static/fonts/` 目录下添加中文字体文件：
+
+```bash
+# 在本地或服务器上下载字体
+cd app/static/fonts
+
+# 方法1: 使用腾讯云镜像（推荐，速度快）
+wget https://mirrors.cloud.tencent.com/noto-cjk/NotoSansCJKsc-Regular.otf -O NotoSansSC-Regular.otf
+
+# 方法2: 从GitHub下载思源黑体
+wget https://github.com/googlefonts/noto-cjk/releases/download/Sans2.004/SourceHanSansSC-Regular.otf -O NotoSansSC-Regular.otf
+
+# 方法3: 下载文泉驿微米黑（体积小）
+wget https://github.com/anthonyfok/fonts-wqy-microhei/raw/master/wqy-microhei.ttc
+```
+
+**推荐字体**（开源免费）：
+- 思源黑体 (Noto Sans SC / Source Han Sans SC) - 推荐
+- 文泉驿微米黑 (WenQuanYi Micro Hei) - 轻量
+- 文泉驿正黑 (WenQuanYi Zen Hei)
+
+**Render部署时添加字体**：
+
+如果使用Render，可以在构建命令中添加字体下载：
+
+1. 在Render控制面板中，修改 **Build Command**：
+   ```bash
+   pip install -r requirements.txt && mkdir -p app/static/fonts && wget https://mirrors.cloud.tencent.com/noto-cjk/NotoSansCJKsc-Regular.otf -O app/static/fonts/NotoSansSC-Regular.otf
+   ```
+
+2. 或者将字体文件提交到Git仓库（如果文件不大）
+
+#### 方案2：在服务器上安装系统字体
+
+**Debian/Ubuntu系统**（Render使用）：
+
+```bash
+# 安装思源黑体
+apt-get update
+apt-get install -y fonts-noto-cjk
+
+# 或安装文泉驿字体（更轻量）
+apt-get install -y fonts-wqy-microhei fonts-wqy-zenhei
+
+# 清除字体缓存
+fc-cache -fv
+```
+
+**CentOS/RHEL系统**：
+
+```bash
+yum install -y wqy-microhei-fonts wqy-zenhei-fonts
+fc-cache -fv
+```
+
+#### 方案3：修改Dockerfile（使用Docker部署）
+
+Dockerfile中已包含字体安装，确认以下内容存在：
+
+```dockerfile
+RUN apt-get update && apt-get install -y \
+    fonts-noto-cjk \
+    fonts-wqy-microhei \
+    && rm -rf /var/lib/apt/lists/*
+```
+
+**验证字体是否生效**：
+
+1. 查看应用日志，确认看到以下信息：
+   ```
+   ✓ 成功加载中文字体: /path/to/font.ttf
+     字体名称: Noto Sans CJK SC
+   ```
+
+2. 如果看到警告：
+   ```
+   ⚠ 未找到字体文件，使用字体族名称后备方案
+   ```
+   说明字体未正确安装，需要按上述方案重新配置。
+
+---
+
 ### 依赖安装失败
 
 **问题**：pip 安装 GeoPandas 或相关依赖失败

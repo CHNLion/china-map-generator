@@ -140,48 +140,130 @@ def get_region_data(region_type='province', parent_name=None):
 
 # 设置中文字体
 def set_chinese_font():
-    """设置matplotlib中文字体为微软雅黑"""
-    # 查找微软雅黑字体路径
+    """
+    设置matplotlib中文字体
+    优先级：
+    1. 项目字体目录 (app/static/fonts/)
+    2. Linux系统字体
+    3. Windows系统字体
+    4. 字体族名称后备方案
+    """
     font_path = None
     font_found = False
     
-    # 针对Windows系统
-    if platform.system() == 'Windows':
-        msyh_font_names = ['msyh.ttc', 'msyh.ttf', 'msyhbd.ttf', 'msyhl.ttc', 'Microsoft YaHei']
-        
-        # 遍历系统字体目录查找微软雅黑
-        system_font_dirs = [
-            'C:/Windows/Fonts',  # Windows字体目录
-            os.path.join(os.environ.get('WINDIR', 'C:/Windows'), 'Fonts')
-        ]
-        
-        # 查找字体
-        for font_dir in system_font_dirs:
-            if not os.path.exists(font_dir):
-                continue
-            for font_name in msyh_font_names:
-                full_path = os.path.join(font_dir, font_name)
-                if os.path.exists(full_path):
-                    font_path = full_path
-                    font_found = True
-                    break
-            if font_found:
-                break
+    # 定义字体搜索列表（按优先级）
+    font_search_list = []
     
-    # 如果找到微软雅黑字体，设置为默认字体
-    if font_found and font_path:
-        print(f"使用系统微软雅黑字体: {font_path}")
-        font_prop = fm.FontProperties(fname=font_path)
-        plt.rcParams['font.family'] = font_prop.get_name()
-        # 设置全局字体
+    # 1. 优先搜索项目字体目录
+    project_fonts_dir = FONTS_FOLDER
+    if os.path.exists(project_fonts_dir):
+        project_font_files = [
+            'NotoSansSC-Regular.otf',
+            'NotoSansSC-Regular.ttf',
+            'NotoSansCJKsc-Regular.otf',
+            'wqy-microhei.ttc',
+            'wqy-zenhei.ttc',
+        ]
+        for font_file in project_font_files:
+            font_search_list.append(os.path.join(project_fonts_dir, font_file))
+    
+    # 2. Linux系统字体路径
+    if platform.system() == 'Linux':
+        linux_font_paths = [
+            # Noto Sans CJK SC (思源黑体)
+            '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc',
+            '/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc',
+            '/usr/share/fonts/noto-cjk/NotoSansCJKsc-Regular.otf',
+            '/usr/local/share/fonts/NotoSansCJKsc-Regular.otf',
+            # WenQuanYi (文泉驿)
+            '/usr/share/fonts/truetype/wqy/wqy-microhei.ttc',
+            '/usr/share/fonts/wqy-microhei/wqy-microhei.ttc',
+            '/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc',
+            '/usr/share/fonts/wqy-zenhei/wqy-zenhei.ttc',
+            # Droid Sans Fallback
+            '/usr/share/fonts/truetype/droid/DroidSansFallbackFull.ttf',
+            '/usr/share/fonts/droid/DroidSansFallback.ttf',
+            # AR PL UMing (文鼎)
+            '/usr/share/fonts/truetype/arphic/uming.ttc',
+        ]
+        font_search_list.extend(linux_font_paths)
+    
+    # 3. Windows系统字体
+    elif platform.system() == 'Windows':
+        windows_fonts_dir = os.path.join(os.environ.get('WINDIR', 'C:/Windows'), 'Fonts')
+        windows_font_files = [
+            'msyh.ttc',      # 微软雅黑
+            'msyh.ttf',
+            'msyhbd.ttf',
+            'simhei.ttf',    # 黑体
+            'simsun.ttc',    # 宋体
+            'SIMHEI.TTF',
+            'SIMSUN.TTC',
+        ]
+        for font_file in windows_font_files:
+            font_search_list.append(os.path.join(windows_fonts_dir, font_file))
+    
+    # 4. macOS系统字体
+    elif platform.system() == 'Darwin':
+        macos_font_paths = [
+            '/System/Library/Fonts/PingFang.ttc',
+            '/Library/Fonts/Arial Unicode.ttf',
+            '/System/Library/Fonts/STHeiti Light.ttc',
+            '/System/Library/Fonts/STHeiti Medium.ttc',
+        ]
+        font_search_list.extend(macos_font_paths)
+    
+    # 搜索字体文件
+    for font_file_path in font_search_list:
+        if os.path.exists(font_file_path):
+            try:
+                # 尝试加载字体
+                font_prop = fm.FontProperties(fname=font_file_path)
+                font_name = font_prop.get_name()
+                
+                # 设置为默认字体
+                rcParams['font.family'] = 'sans-serif'
+                rcParams['font.sans-serif'] = [font_name] + rcParams['font.sans-serif']
+                rcParams['axes.unicode_minus'] = False  # 正确显示负号
+                
+                font_path = font_file_path
+                font_found = True
+                print(f"✓ 成功加载中文字体: {font_file_path}")
+                print(f"  字体名称: {font_name}")
+                break
+            except Exception as e:
+                print(f"  尝试加载字体失败 {font_file_path}: {str(e)}")
+                continue
+    
+    # 如果没有找到字体文件，使用字体族名称作为后备
+    if not font_found:
+        print("⚠ 未找到字体文件，使用字体族名称后备方案")
+        # 按优先级设置字体族
+        font_families = [
+            'Noto Sans CJK SC',
+            'Noto Sans SC', 
+            'WenQuanYi Micro Hei',
+            'WenQuanYi Zen Hei',
+            'Droid Sans Fallback',
+            'Microsoft YaHei',
+            'SimHei',
+            'SimSun',
+            'Arial Unicode MS',
+            'DejaVu Sans',
+            'sans-serif'
+        ]
         rcParams['font.family'] = 'sans-serif'
-        rcParams['font.sans-serif'] = [font_prop.get_name(), 'SimHei', 'Arial Unicode MS', 'sans-serif']
-        rcParams['axes.unicode_minus'] = False  # 正确显示负号
-    else:
-        # 如果找不到微软雅黑，尝试使用其他中文字体
-        print("未找到系统微软雅黑字体，使用备用字体设置")
-        plt.rcParams['font.sans-serif'] = ['SimHei', 'FangSong', 'SimSun', 'KaiTi', 'Arial Unicode MS', 'sans-serif'] 
-        plt.rcParams['axes.unicode_minus'] = False
+        rcParams['font.sans-serif'] = font_families
+        rcParams['axes.unicode_minus'] = False
+        print(f"  使用字体族: {', '.join(font_families[:3])}")
+    
+    # 清除matplotlib字体缓存（有时需要）
+    try:
+        fm._load_fontmanager(try_read_cache=False)
+    except:
+        pass
+    
+    return font_found
 
 def hex_to_rgb(hex_color):
     """
