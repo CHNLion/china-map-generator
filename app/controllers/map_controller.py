@@ -955,7 +955,10 @@ def generate_map(map_type='省', region_name=None, highlight_regions=None,
                     map_title += f" (高亮: {len(highlight_regions)}个区域)"
         
         # 设置标题及字体大小
-        ax.set_title(map_title, fontsize=titleFontSize)
+        if chinese_font:
+            ax.set_title(map_title, fontsize=titleFontSize, fontproperties=chinese_font)
+        else:
+            ax.set_title(map_title, fontsize=titleFontSize)
         print(f"设置地图标题: '{map_title}', 字体大小: {titleFontSize}")
     else:
         print("不显示地图标题")
