@@ -218,28 +218,25 @@ def set_chinese_font():
     for font_file_path in font_search_list:
         if os.path.exists(font_file_path):
             try:
-                # 尝试加载字体
+                # 尝试加载字体文件
                 font_prop = fm.FontProperties(fname=font_file_path)
                 font_name = font_prop.get_name()
                 
-                # 强制设置为默认字体（多种方式确保生效）
-                plt.rcParams['font.family'] = 'sans-serif'
-                plt.rcParams['font.sans-serif'] = [font_name]
-                plt.rcParams['axes.unicode_minus'] = False
+                # 手动将字体添加到matplotlib的字体管理器中
+                try:
+                    fm.fontManager.addfont(font_file_path)
+                    print(f"✓ 成功将字体添加到fontManager: {font_file_path}")
+                except Exception as add_err:
+                    print(f"  fontManager.addfont失败: {str(add_err)}")
                 
-                # 同时设置rcParams
-                rcParams['font.family'] = 'sans-serif'
-                rcParams['font.sans-serif'] = [font_name]
-                rcParams['axes.unicode_minus'] = False
-                
-                # 保存字体属性供后续使用
+                # 不依赖字体名称，直接使用文件路径创建FontProperties
                 font_path = font_file_path
                 font_found = True
-                print(f"✓ 成功加载中文字体: {font_file_path}")
+                print(f"✓ 成功加载中文字体文件: {font_file_path}")
                 print(f"  字体名称: {font_name}")
-                print(f"  字体将强制应用到所有matplotlib绘图")
+                print(f"  将通过FontProperties直接引用字体文件")
                 
-                # 返回字体属性对象
+                # 返回字体属性对象（直接引用文件路径）
                 return font_prop
             except Exception as e:
                 print(f"  尝试加载字体失败 {font_file_path}: {str(e)}")
