@@ -354,6 +354,9 @@ china-map-generator/
 │   │   │   ├── main.js            # 主交互逻辑
 │   │   │   ├── multi-highlight.js # 多区域突出显示逻辑
 │   │   │   └── color-picker.js    # 颜色选择器初始化
+│   │   ├── fonts/                 # 中文字体文件目录
+│   │   │   ├── README.md
+│   │   │   └── SourceHanSansSC-Regular.otf  # 思源黑体
 │   │   └── maps/                  # 本地保存地图目录（可选）
 │   └── templates/
 │       └── index.html             # 主页面模板
@@ -364,6 +367,8 @@ china-map-generator/
 │   └── ...
 ├── app.py                         # Flask应用入口
 ├── requirements.txt               # Python依赖
+├── DEPLOYMENT.md                  # 部署指南
+├── FONT_FIX_GUIDE.md             # 字体问题解决指南
 └── README.md                      # 项目文档
 ```
 
@@ -424,12 +429,22 @@ A: 系统已实现智能锁定，突出显示区域会自动限制在底图范�
 A: 已添加边框样式，如果问题仍存在，请清除浏览器缓存后刷新
 
 **Q: 中文显示为方块或乱码？**  
-A: 确保系统安装了微软雅黑字体，或在代码中指定其他中文字体
+A: 项目已内置思源黑体字体文件（`app/static/fonts/SourceHanSansSC-Regular.otf`），在Linux服务器上会自动使用。如仍有问题，请查看 [FONT_FIX_GUIDE.md](FONT_FIX_GUIDE.md) 获取详细解决方案
 
 **Q: 如何添加更多预设颜色？**  
 A: 修改 `app/static/js/multi-highlight.js` 中的 `defaultColors` 数组
 
 ## 🔄 更新日志
+
+### v2.2.1 (2025-11-15)
+- 🐛 修复Linux部署环境中文字体显示问题
+  - 内置思源黑体（Source Han Sans SC）字体文件
+  - 优化字体加载逻辑，支持直接引用字体文件
+  - 修复地图标题、地区标签的字体应用
+  - 添加 `fontManager.addfont()` 确保字体正确注册
+- 🐛 修复无限递归导致的程序崩溃问题
+- 📝 新增字体问题解决指南（FONT_FIX_GUIDE.md）
+- 🚀 改进Render等云平台的部署兼容性
 
 ### v2.2.0 (2025-01-12)
 - ✨ 新增吸管取色工具
