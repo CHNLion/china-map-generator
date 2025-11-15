@@ -158,6 +158,7 @@ def set_chinese_font():
     project_fonts_dir = FONTS_FOLDER
     if os.path.exists(project_fonts_dir):
         project_font_files = [
+            'SourceHanSansSC-Regular.otf',  # 思源黑体（已下载）
             'NotoSansSC-Regular.otf',
             'NotoSansSC-Regular.ttf',
             'NotoSansCJKsc-Regular.otf',
@@ -221,19 +222,35 @@ def set_chinese_font():
                 font_prop = fm.FontProperties(fname=font_file_path)
                 font_name = font_prop.get_name()
                 
-                # 设置为默认字体
-                rcParams['font.family'] = 'sans-serif'
-                rcParams['font.sans-serif'] = [font_name] + rcParams['font.sans-serif']
-                rcParams['axes.unicode_minus'] = False  # 正确显示负号
+                # 强制设置为默认字体（多种方式确保生效）
+                plt.rcParams['font.family'] = 'sans-serif'
+                plt.rcParams['font.sans-serif'] = [font_name]
+                plt.rcParams['axes.unicode_minus'] = False
                 
+                # 同时设置rcParams
+                rcParams['font.family'] = 'sans-serif'
+                rcParams['font.sans-serif'] = [font_name]
+                rcParams['axes.unicode_minus'] = False
+                
+                # 保存字体属性供后续使用
                 font_path = font_file_path
                 font_found = True
                 print(f"✓ 成功加载中文字体: {font_file_path}")
                 print(f"  字体名称: {font_name}")
-                break
+                print(f"  字体将强制应用到所有matplotlib绘图")
+                
+                # 返回字体属性对象
+                return font_prop
             except Exception as e:
                 print(f"  尝试加载字体失败 {font_file_path}: {str(e)}")
                 continue
+    
+    # 如果找到字体但上面没return，在这里return
+    if font_found:
+        try:
+            return fm.FontProperties(fname=font_path)
+        except:
+            pass
     
     # 如果没有找到字体文件，使用字体族名称作为后备
     if not font_found:
@@ -263,7 +280,7 @@ def set_chinese_font():
     except:
         pass
     
-    return font_found
+    return None  # 没有找到字体时返回None
 
 def hex_to_rgb(hex_color):
     """
@@ -409,8 +426,15 @@ def generate_map(map_type='省', region_name=None, highlight_regions=None,
     返回:
         str: 如果save_local=True，返回生成的图片路径；否则返回Base64编码的图片数据
     """
-    # 设置中文字体
-    set_chinese_font()
+    # 设置中文字体并获取字体属性
+    chinese_font = set_chinese_font()
+    
+    # 创建带字体的文本添加包装函数
+    def add_text_with_font(ax, x, y, text, **kwargs):
+        """添加文本，自动应用中文字体"""
+        if chinese_font:
+            kwargs['fontproperties'] = chinese_font
+        return add_text_with_font(ax, x, y, text, **kwargs)
     
     # 处理高亮区域参数（支持新旧格式）
     if highlight_regions is None:
@@ -717,7 +741,7 @@ def generate_map(map_type='省', region_name=None, highlight_regions=None,
                         is_highlighted = any(idx in h_gdf.index for h_gdf, _ in highlight_gdfs_with_colors)
                         label_color = 'white' if is_highlighted else 'black'
                         
-                        ax.text(x, y, label, 
+                        add_text_with_font(ax, x, y, label, 
                                 fontsize=font_size, ha='center', va='center', color=label_color)
                 except Exception as e:
                     print(f"添加标签时出错: {str(e)}")
@@ -1035,19 +1059,11 @@ def generate_map(map_type='省', region_name=None, highlight_regions=None,
             
             # 添加数字标签（所有刻度都显示）
             label_text = f"{int(scale_km * i / num_segments)}"
-            ax.text(
-                tick_x,
-                start_y - bar_height * 0.8,
-                label_text,
-                ha='center',
-                va='top',
-                fontsize=font_size,
-                fontweight='normal',
-                zorder=1001
-            )
+            add_text_with_font(ax, tick_x, start_y - bar_height * 0.8, label_text,
+                ha='center', va='top', fontsize=font_size, fontweight='normal', zorder=1001)
         
         # 添加单位标签
-        ax.text(
+        add_text_with_font(ax, 
             start_x + scale_pixel_length / 2,
             start_y + bar_height * 1.5,
             'km',
@@ -1148,7 +1164,7 @@ def generate_map(map_type='省', region_name=None, highlight_regions=None,
             
             # 添加数字标签
             label_text = f"{int(scale_km * i / num_segments)}"
-            ax.text(
+            add_text_with_font(ax, 
                 tick_x,
                 start_y - tick_height * 2.5,
                 label_text,
@@ -1160,7 +1176,7 @@ def generate_map(map_type='省', region_name=None, highlight_regions=None,
             )
         
         # 添加单位标签
-        ax.text(
+        add_text_with_font(ax, 
             start_x + scale_pixel_length + margin_x * 0.2,
             start_y,
             'km',
@@ -1288,7 +1304,7 @@ def generate_map(map_type='省', region_name=None, highlight_regions=None,
             
             # 添加数字标签
             label_text = f"{int(scale_km * i / num_segments)}"
-            ax.text(
+            add_text_with_font(ax, 
                 tick_x,
                 start_y - row_height * 1.2,
                 label_text,
@@ -1300,7 +1316,7 @@ def generate_map(map_type='省', region_name=None, highlight_regions=None,
             )
         
         # 添加单位标签
-        ax.text(
+        add_text_with_font(ax, 
             start_x + scale_pixel_length / 2,
             start_y + row_height * 2.8,
             'km',
